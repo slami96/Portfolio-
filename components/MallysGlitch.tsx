@@ -14,7 +14,8 @@ export default function MallysGlitch() {
   const barsRef    = useRef<HTMLCanvasElement>(null)
   const badgeRef   = useRef<HTMLSpanElement>(null)
 
-  const isNewRef    = useRef(false)
+  const isNewRef     = useRef(false)
+  const inViewRef    = useRef(false)
   const loopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   function runGlitch(toNew: boolean, onDone?: () => void) {
@@ -26,7 +27,6 @@ export default function MallysGlitch() {
 
     if (!oldWrap || !newWrap || !red || !cyan || !scan || !flash) return
 
-    // Draw bars
     const ctx = bars?.getContext('2d')
     let barsIv: ReturnType<typeof setInterval> | null = null
     if (ctx && bars) {
@@ -44,9 +44,7 @@ export default function MallysGlitch() {
       }, 55)
     }
 
-    const [showEl, hideEl] = toNew
-      ? [newWrap, oldWrap]
-      : [oldWrap, newWrap]
+    const [showEl, hideEl] = toNew ? [newWrap, oldWrap] : [oldWrap, newWrap]
 
     const tl = gsap.timeline({
       onComplete: () => {
@@ -72,7 +70,9 @@ export default function MallysGlitch() {
   }
 
   function scheduleLoop() {
+    if (!inViewRef.current) return            // don't queue work while off screen
     loopTimerRef.current = setTimeout(() => {
+      if (!inViewRef.current) return
       const toNew = !isNewRef.current
       isNewRef.current = toNew
       runGlitch(toNew, () => scheduleLoop())
@@ -81,16 +81,36 @@ export default function MallysGlitch() {
 
   useEffect(() => {
     if (!sceneRef.current) return
-    ScrollTrigger.create({
+
+    const st = ScrollTrigger.create({
       trigger: sceneRef.current,
-      start: 'top 65%',
-      once: true,
+      start: 'top 80%',
+      end: 'bottom 20%',
       onEnter: () => {
+        if (inViewRef.current) return
+        inViewRef.current = true
         isNewRef.current = true
         runGlitch(true, () => scheduleLoop())
       },
+      onEnterBack: () => {
+        if (inViewRef.current) return
+        inViewRef.current = true
+        scheduleLoop()
+      },
+      onLeave: () => {
+        inViewRef.current = false
+        if (loopTimerRef.current) clearTimeout(loopTimerRef.current)
+      },
+      onLeaveBack: () => {
+        inViewRef.current = false
+        if (loopTimerRef.current) clearTimeout(loopTimerRef.current)
+      },
     })
-    return () => { if (loopTimerRef.current) clearTimeout(loopTimerRef.current) }
+
+    return () => {
+      if (loopTimerRef.current) clearTimeout(loopTimerRef.current)
+      st.kill()
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -98,9 +118,7 @@ export default function MallysGlitch() {
     width: '100%', height: '100%',
     objectFit: 'cover', objectPosition: 'top center', display: 'block',
   }
-  const layerStyle: React.CSSProperties = {
-    position: 'absolute', inset: 0,
-  }
+  const layerStyle: React.CSSProperties = { position: 'absolute', inset: 0 }
 
   return (
     <section style={{ background: 'var(--bg2)', borderTop: '0.5px solid var(--border)' }}>
@@ -112,7 +130,7 @@ export default function MallysGlitch() {
           marginBottom: '1rem', display: 'block',
         }}>Case Study — UX Redesign</span>
         <h2 style={{
-          fontFamily: "'Syne', sans-serif',",
+          fontFamily: "'Syne', sans-serif",   /* was malformed: "'Syne', sans-serif'," */
           fontSize: 'clamp(34px,5vw,64px)',
           fontWeight: 700, letterSpacing: '-0.025em', lineHeight: 1.08,
         }}>
@@ -125,7 +143,6 @@ export default function MallysGlitch() {
         position: 'relative', width: '100%', height: '62vh',
         overflow: 'hidden', background: '#000',
       }}>
-        {/* SVG color filters */}
         <svg style={{ display: 'none' }}>
           <defs>
             <filter id="f-red">
