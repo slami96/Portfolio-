@@ -149,6 +149,10 @@ export default function ProjectsReel() {
         end: () => `+=${row.scrollWidth - window.innerWidth}`,
         pin: true, scrub: 1,            // was 2.5 — tighter tracking
         anticipatePin: 1, invalidateOnRefresh: true,
+        // This section sits ABOVE the PRINT section. Higher refreshPriority means
+        // its pinned space gets measured first, so PRINT lands in the right place
+        // and stops overlapping the projects.
+        refreshPriority: 1,
       },
     })
     setHScroll(hs)
