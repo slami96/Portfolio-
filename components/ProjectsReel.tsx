@@ -18,7 +18,8 @@ function ProjectCard({ project, hScrollRef }: { project: Project; hScrollRef: Re
     gsap.fromTo(visRef.current,
       { clipPath: 'inset(0 100% 0 0 round 10px)' },
       { clipPath: 'inset(0 0% 0 0 round 10px)', ease: 'power2.out',
-        scrollTrigger: { trigger: frame, containerAnimation: hScrollRef, start: 'left 85%', end: 'left 30%', scrub: 2.5 } }
+        // scrub 2.5 -> 1: less lag between scroll and reveal
+        scrollTrigger: { trigger: frame, containerAnimation: hScrollRef, start: 'left 85%', end: 'left 30%', scrub: 1 } }
     )
     gsap.from(titRef.current,
       { yPercent: 105, duration: 0.9, ease: 'power3.out',
@@ -26,7 +27,6 @@ function ProjectCard({ project, hScrollRef }: { project: Project; hScrollRef: Re
     )
   }, [hScrollRef])
 
-  // Crossfade cycling
   useEffect(() => {
     const iv = setInterval(() => setActiveImg(p => p === 0 ? 1 : 0), 2800)
     return () => clearInterval(iv)
@@ -38,7 +38,6 @@ function ProjectCard({ project, hScrollRef }: { project: Project; hScrollRef: Re
       alignItems: 'center', flexShrink: 0, position: 'relative',
       overflow: 'hidden', background: project.bg,
     }}>
-      {/* Background number */}
       <div style={{
         position: 'absolute', fontFamily: "'Syne', sans-serif",
         fontSize: '38vw', fontWeight: 800,
@@ -51,7 +50,6 @@ function ProjectCard({ project, hScrollRef }: { project: Project; hScrollRef: Re
         display: 'grid', gridTemplateColumns: '38% 62%',
         gap: '4vw', padding: '0 7vw', width: '100%', alignItems: 'center',
       }}>
-        {/* Meta */}
         <div>
           <span style={{
             fontFamily: "'JetBrains Mono', monospace", fontSize: '10px',
@@ -98,7 +96,6 @@ function ProjectCard({ project, hScrollRef }: { project: Project; hScrollRef: Re
           </a>
         </div>
 
-        {/* Visual with crossfade */}
         <div ref={visRef} style={{
           aspectRatio: '16/10', borderRadius: '10px',
           overflow: 'hidden', clipPath: 'inset(0 100% 0 0 round 10px)',
@@ -119,7 +116,6 @@ function ProjectCard({ project, hScrollRef }: { project: Project; hScrollRef: Re
               />
             </div>
           ))}
-          {/* Fallback gradient shown until images load */}
           {!loaded[0] && (
             <div style={{
               position: 'absolute', inset: 0,
@@ -151,11 +147,16 @@ export default function ProjectsReel() {
         trigger: '#projects-wrap',
         start: 'top top',
         end: () => `+=${row.scrollWidth - window.innerWidth}`,
-        pin: true, scrub: 2.5,
+        pin: true, scrub: 1,            // was 2.5 — tighter tracking
         anticipatePin: 1, invalidateOnRefresh: true,
       },
     })
     setHScroll(hs)
+
+    return () => {
+      hs.scrollTrigger?.kill()
+      hs.kill()
+    }
   }, [])
 
   return (
