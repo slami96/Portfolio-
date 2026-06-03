@@ -1,183 +1,143 @@
 'use client'
-import { useEffect, useRef } from 'react'
-import gsap from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { useEffect, useRef, useState } from 'react'
+
+// ── Screenshots ───────────────────────────────────────────────────────────
+// These use a live full-page screenshot service. It works, but it can be slow
+// and occasionally rate-limited. For best speed + reliability, take two real
+// full-page screenshots, drop them in /public/mallys/, and swap the URLs below:
+//   const BEFORE_URL = '/mallys/before.png'
+//   const AFTER_URL  = '/mallys/after.png'
+const BEFORE_URL = 'https://image.thum.io/get/width/1200/fullpage/https://www.mallys.cz'
+const AFTER_URL  = 'https://image.thum.io/get/width/1200/fullpage/https://mallysremake-b4yb.vercel.app'
+const LIVE_URL   = 'https://mallysremake-b4yb.vercel.app'
 
 export default function MallysGlitch() {
-  const sceneRef   = useRef<HTMLDivElement>(null)
-  const oldWrapRef = useRef<HTMLDivElement>(null)
-  const newWrapRef = useRef<HTMLDivElement>(null)
-  const redRef     = useRef<HTMLImageElement>(null)
-  const cyanRef    = useRef<HTMLImageElement>(null)
-  const scanRef    = useRef<HTMLDivElement>(null)
-  const flashRef   = useRef<HTMLDivElement>(null)
-  const barsRef    = useRef<HTMLCanvasElement>(null)
-  const badgeRef   = useRef<HTMLSpanElement>(null)
+  const [view, setView] = useState<'before' | 'after'>('after')
+  const frameRef = useRef<HTMLDivElement>(null)
+  const [shown, setShown] = useState(false)
 
-  const isNewRef     = useRef(false)
-  const inViewRef    = useRef(false)
-  const loopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  function runGlitch(toNew: boolean, onDone?: () => void) {
-    const oldWrap = oldWrapRef.current
-    const newWrap = newWrapRef.current
-    const red = redRef.current, cyan = cyanRef.current
-    const scan = scanRef.current, flash = flashRef.current
-    const bars = barsRef.current
-
-    if (!oldWrap || !newWrap || !red || !cyan || !scan || !flash) return
-
-    const ctx = bars?.getContext('2d')
-    let barsIv: ReturnType<typeof setInterval> | null = null
-    if (ctx && bars) {
-      bars.width  = bars.offsetWidth
-      bars.height = bars.offsetHeight
-      barsIv = setInterval(() => {
-        ctx.clearRect(0, 0, bars.width, bars.height)
-        for (let i = 0; i < 12; i++) {
-          const y = Math.random() * bars.height
-          const h = Math.random() * 12 + 2
-          const ox = (Math.random() - 0.5) * 40
-          ctx.fillStyle = `rgba(${Math.random() > 0.5 ? 200 : 0},0,${Math.random() > 0.5 ? 200 : 0},0.18)`
-          ctx.fillRect(ox, y, bars.width, h)
-        }
-      }, 55)
-    }
-
-    const [showEl, hideEl] = toNew ? [newWrap, oldWrap] : [oldWrap, newWrap]
-
-    const tl = gsap.timeline({
-      onComplete: () => {
-        if (barsIv) { clearInterval(barsIv); ctx?.clearRect(0, 0, bars!.width, bars!.height) }
-        onDone?.()
-      }
-    })
-
-    tl
-      .to([red, cyan], { opacity: 0.55, duration: 0.12, ease: 'none' }, 0)
-      .to(red,  { x: 10, duration: 0.12, ease: 'none' }, 0)
-      .to(cyan, { x: -10, duration: 0.12, ease: 'none' }, 0)
-      .to(scan, { opacity: 0.9, duration: 0.1 }, 0.05)
-      .to(red,  { x: -25, duration: 0.07, ease: 'none' }, 0.18)
-      .to(cyan, { x:  25, duration: 0.07, ease: 'none' }, 0.18)
-      .to(red,  { x:  35, opacity: 0.8, duration: 0.06, ease: 'none' }, 0.28)
-      .to(cyan, { x: -35, opacity: 0.8, duration: 0.06, ease: 'none' }, 0.28)
-      .to(flash, { opacity: 1, duration: 0.06, ease: 'none' }, 0.46)
-      .set(hideEl, { opacity: 0 }, 0.5)
-      .set(showEl, { opacity: 1 }, 0.5)
-      .to(flash, { opacity: 0, duration: 0.22, ease: 'power2.out' }, 0.52)
-      .to([red, cyan, scan], { opacity: 0, x: 0, duration: 0.2 }, 0.5)
-  }
-
-  function scheduleLoop() {
-    if (!inViewRef.current) return            // don't queue work while off screen
-    loopTimerRef.current = setTimeout(() => {
-      if (!inViewRef.current) return
-      const toNew = !isNewRef.current
-      isNewRef.current = toNew
-      runGlitch(toNew, () => scheduleLoop())
-    }, 2800)
-  }
-
+  // Gentle fade-up when the section scrolls into view
   useEffect(() => {
-    if (!sceneRef.current) return
-
-    const st = ScrollTrigger.create({
-      trigger: sceneRef.current,
-      start: 'top 80%',
-      end: 'bottom 20%',
-      onEnter: () => {
-        if (inViewRef.current) return
-        inViewRef.current = true
-        isNewRef.current = true
-        runGlitch(true, () => scheduleLoop())
-      },
-      onEnterBack: () => {
-        if (inViewRef.current) return
-        inViewRef.current = true
-        scheduleLoop()
-      },
-      onLeave: () => {
-        inViewRef.current = false
-        if (loopTimerRef.current) clearTimeout(loopTimerRef.current)
-      },
-      onLeaveBack: () => {
-        inViewRef.current = false
-        if (loopTimerRef.current) clearTimeout(loopTimerRef.current)
-      },
-    })
-
-    return () => {
-      if (loopTimerRef.current) clearTimeout(loopTimerRef.current)
-      st.kill()
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    const el = frameRef.current
+    if (!el) return
+    const io = new IntersectionObserver(
+      ([e]) => { if (e.isIntersecting) { setShown(true); io.disconnect() } },
+      { threshold: 0.2 }
+    )
+    io.observe(el)
+    return () => io.disconnect()
   }, [])
 
-  const imgStyle: React.CSSProperties = {
-    width: '100%', height: '100%',
-    objectFit: 'cover', objectPosition: 'top center', display: 'block',
+  const host = view === 'after' ? 'mallysremake-b4yb.vercel.app' : 'mallys.cz'
+
+  const tabBase: React.CSSProperties = {
+    fontFamily: "'JetBrains Mono', monospace", fontSize: '10px',
+    letterSpacing: '0.12em', textTransform: 'uppercase',
+    padding: '8px 18px', borderRadius: '100px', cursor: 'pointer',
+    border: '0.5px solid var(--border)', background: 'transparent',
+    transition: 'all 0.3s ease',
   }
-  const layerStyle: React.CSSProperties = { position: 'absolute', inset: 0 }
+  const tabActive: React.CSSProperties = {
+    ...tabBase, background: 'var(--gold)', color: '#0b0b0b',
+    borderColor: 'var(--gold)', fontWeight: 700,
+  }
+  const tabIdle: React.CSSProperties = { ...tabBase, color: 'var(--muted)' }
+
+  const layers: { key: 'before' | 'after'; url: string }[] = [
+    { key: 'before', url: BEFORE_URL },
+    { key: 'after',  url: AFTER_URL },
+  ]
 
   return (
-    <section style={{ background: 'var(--bg2)', borderTop: '0.5px solid var(--border)' }}>
+    <section style={{ background: 'var(--bg2)', borderTop: '0.5px solid var(--border)', padding: '100px 7vw 90px' }}>
+      <style>{`
+        @keyframes mallyScroll {
+          from { background-position: center top; }
+          to   { background-position: center bottom; }
+        }
+        .mally-page { animation: mallyScroll 26s ease-in-out infinite alternate; }
+        .mally-frame:hover .mally-page { animation-play-state: paused; }
+        @media (prefers-reduced-motion: reduce) {
+          .mally-page { animation: none; background-position: center top; }
+        }
+      `}</style>
+
       {/* Header */}
-      <div style={{ padding: '100px 7vw 60px' }}>
-        <span style={{
-          fontFamily: "'JetBrains Mono', monospace", fontSize: '10px',
-          letterSpacing: '0.2em', color: 'var(--gold)', textTransform: 'uppercase',
-          marginBottom: '1rem', display: 'block',
-        }}>Case Study — UX Redesign</span>
-        <h2 style={{
-          fontFamily: "'Syne', sans-serif",   /* was malformed: "'Syne', sans-serif'," */
-          fontSize: 'clamp(34px,5vw,64px)',
-          fontWeight: 700, letterSpacing: '-0.025em', lineHeight: 1.08,
-        }}>
-          Mallys · Before<br />&amp; After
-        </h2>
+      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '10px', letterSpacing: '0.2em', color: 'var(--gold)', textTransform: 'uppercase', marginBottom: '1rem', display: 'block' }}>
+        Case Study — UX Redesign
+      </span>
+      <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 'clamp(34px,5vw,64px)', fontWeight: 700, letterSpacing: '-0.025em', lineHeight: 1.08, marginBottom: '2rem' }}>
+        Mallys · Before<br />&amp; After
+      </h2>
+
+      {/* Before / After toggle */}
+      <div role="tablist" aria-label="Compare designs" style={{ display: 'flex', gap: '10px', marginBottom: '28px' }}>
+        <button role="tab" aria-selected={view === 'before'} onClick={() => setView('before')} style={view === 'before' ? tabActive : tabIdle}>
+          Before
+        </button>
+        <button role="tab" aria-selected={view === 'after'} onClick={() => setView('after')} style={view === 'after' ? tabActive : tabIdle}>
+          After
+        </button>
       </div>
 
-      {/* Glitch scene */}
-      <div ref={sceneRef} style={{
-        position: 'relative', width: '100%', height: '62vh',
-        overflow: 'hidden', background: '#000',
-      }}>
-        <svg style={{ display: 'none' }}>
-          <defs>
-            <filter id="f-red">
-              <feColorMatrix type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0"/>
-            </filter>
-            <filter id="f-cyan">
-              <feColorMatrix type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0"/>
-            </filter>
-          </defs>
-        </svg>
-
-        {/* OLD SITE */}
-        <div ref={oldWrapRef} style={{ ...layerStyle }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="https://image.thum.io/get/width/1400/crop/700/https://www.mallys.cz" alt="Mallys old" style={imgStyle} />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img ref={redRef} src="https://image.thum.io/get/width/1400/crop/700/https://www.mallys.cz" alt="" style={{ ...imgStyle, ...layerStyle, opacity: 0, mixBlendMode: 'screen', filter: 'url(#f-red)', pointerEvents: 'none' }} />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img ref={cyanRef} src="https://image.thum.io/get/width/1400/crop/700/https://www.mallys.cz" alt="" style={{ ...imgStyle, ...layerStyle, opacity: 0, mixBlendMode: 'screen', filter: 'url(#f-cyan)', pointerEvents: 'none' }} />
-          <div ref={scanRef} style={{ ...layerStyle, backgroundImage: 'repeating-linear-gradient(0deg,transparent 0px,transparent 3px,rgba(0,0,0,0.22) 3px,rgba(0,0,0,0.22) 4px)', opacity: 0, pointerEvents: 'none', zIndex: 3 }} />
-          <canvas ref={barsRef} style={{ ...layerStyle, opacity: 1, pointerEvents: 'none', zIndex: 4, width: '100%', height: '100%' }} />
-          <div ref={flashRef} style={{ ...layerStyle, background: '#fff', opacity: 0, pointerEvents: 'none', zIndex: 9 }} />
-          <span style={{ position: 'absolute', bottom: '20px', left: '24px', fontFamily: "'JetBrains Mono', monospace", fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase', padding: '6px 14px', background: 'rgba(0,0,0,0.55)', borderRadius: '4px', color: 'var(--muted)', backdropFilter: 'blur(6px)', zIndex: 5 }}>Before · mallys.cz</span>
+      {/* Browser frame */}
+      <div
+        ref={frameRef}
+        className="mally-frame"
+        style={{
+          opacity: shown ? 1 : 0,
+          transform: shown ? 'translateY(0)' : 'translateY(24px)',
+          transition: 'opacity 0.8s ease, transform 0.8s ease',
+          borderRadius: '12px', overflow: 'hidden',
+          border: '0.5px solid var(--border)',
+          boxShadow: '0 40px 120px rgba(0,0,0,0.5)', background: '#000',
+        }}
+      >
+        {/* Top bar */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '12px 16px', background: '#111', borderBottom: '0.5px solid var(--border)' }}>
+          <div style={{ display: 'flex', gap: '7px' }}>
+            {['#ff5f57', '#febc2e', '#28c840'].map(c => (
+              <span key={c} style={{ width: 11, height: 11, borderRadius: '50%', background: c, opacity: 0.85 }} />
+            ))}
+          </div>
+          <div style={{ flex: 1, maxWidth: 420, margin: '0 auto', textAlign: 'center', fontFamily: "'JetBrains Mono', monospace", fontSize: '11px', color: 'var(--muted)', background: '#0b0b0b', border: '0.5px solid var(--border)', borderRadius: '100px', padding: '5px 14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {host}
+          </div>
+          <span style={{ width: 47, flexShrink: 0 }} aria-hidden /> {/* balances the dots */}
         </div>
 
-        {/* NEW SITE */}
-        <div ref={newWrapRef} style={{ ...layerStyle, opacity: 0 }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="https://image.thum.io/get/width/1400/crop/700/https://mallysremake-b4yb.vercel.app" alt="Mallys redesign" style={imgStyle} />
-          <span ref={badgeRef} style={{ position: 'absolute', bottom: '20px', right: '24px', fontFamily: "'JetBrains Mono', monospace", fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase', padding: '6px 14px', background: 'rgba(200,169,110,0.15)', border: '0.5px solid rgba(200,169,110,0.4)', borderRadius: '4px', color: 'var(--gold)', backdropFilter: 'blur(6px)', zIndex: 5 }}>After · Redesign</span>
+        {/* Viewport — full page scrolls through here */}
+        <div style={{ position: 'relative', width: '100%', height: 'clamp(380px, 64vh, 700px)', overflow: 'hidden', background: '#fff' }}>
+          {layers.map(({ key, url }) => (
+            <div
+              key={key}
+              className="mally-page"
+              style={{
+                position: 'absolute', inset: 0,
+                backgroundImage: `url("${url}")`,
+                backgroundRepeat: 'no-repeat',
+                backgroundSize: '100% auto',
+                opacity: view === key ? 1 : 0,
+                transition: 'opacity 0.5s ease',
+                pointerEvents: 'none',
+              }}
+            />
+          ))}
         </div>
       </div>
 
-      {/* Caption */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', padding: '32px 7vw 90px', gap: '40px', borderTop: '0.5px solid var(--border)' }}>
+      {/* Hint + live link */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', flexWrap: 'wrap', gap: '12px' }}>
+        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', letterSpacing: '0.12em', color: 'var(--muted)', textTransform: 'uppercase' }}>
+          ↕ Scrolling the full page · hover to pause
+        </span>
+        <a href={LIVE_URL} target="_blank" rel="noopener noreferrer" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '10px', color: 'var(--cream)', textDecoration: 'none', letterSpacing: '0.08em', borderBottom: '0.5px solid rgba(232,213,183,0.3)', paddingBottom: '2px' }}>
+          View live redesign →
+        </a>
+      </div>
+
+      {/* Captions */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', padding: '48px 0 0', gap: '40px', borderTop: '0.5px solid var(--border)', marginTop: '48px' }}>
         {[
           ['The problem', 'The original mallys.cz lacked a clear brand voice, poor mobile experience, no product storytelling and a generic template feel that did not reflect the handmade craft quality.'],
           ['The solution', 'Full redesign in Next.js 15 — cinematic Ken Burns hero, warm porcelain palette, bilingual CZ/EN toggle, GSAP scroll animations and a cart drawer system built from scratch.'],
