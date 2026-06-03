@@ -11,20 +11,28 @@ export default function SmoothScroll({ children }: { children: React.ReactNode }
 
   useEffect(() => {
     const lenis = new Lenis({
-      lerp: 0.06,
+      // 0.06 was very heavy smoothing — it made scroll feel laggy/floaty and
+      // disconnected from the wheel. 0.1 is crisp but still smooth.
+      lerp: 0.1,
       syncTouch: false,
     })
     lenisRef.current = lenis
 
-    // Sync Lenis with GSAP ticker — single RAF loop
     lenis.on('scroll', ScrollTrigger.update)
-    gsap.ticker.add((time) => {
+
+    // IMPORTANT: keep a single named reference to the ticker callback.
+    // The old code added an arrow function and tried to remove a *different*
+    // arrow function — so the loop was never removed and could stack up on
+    // re-mount / hot reload, causing jagged scroll.
+    const raf = (time: number) => {
       lenis.raf(time * 1000)
-    })
+    }
+    gsap.ticker.add(raf)
     gsap.ticker.lagSmoothing(0)
 
     return () => {
-      gsap.ticker.remove((time) => lenis.raf(time * 1000))
+      gsap.ticker.remove(raf)
+      lenis.off('scroll', ScrollTrigger.update)
       lenis.destroy()
     }
   }, [])
