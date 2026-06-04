@@ -34,27 +34,15 @@ export default function Nav() {
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       willChange: 'transform',
     }}>
-      <a href="#" style={{ display: 'flex', alignItems: 'center', lineHeight: 0 }}>
-        <svg width="34" height="30" viewBox="0 0 781 697" xmlns="http://www.w3.org/2000/svg">
+      {/* Logo — doubled in size (was 34x30) */}
+      <a href="#" aria-label="Home" style={{ display: 'flex', alignItems: 'center', lineHeight: 0 }}>
+        <svg width="68" height="60" viewBox="0 0 781 697" xmlns="http://www.w3.org/2000/svg">
           <g transform="translate(0,697) scale(0.1,-0.1)" fill="#F2F0ED" stroke="none">
             <path d={LOGO_PATH} />
           </g>
         </svg>
       </a>
-      <a href="#contact" style={{
-        fontFamily: "'JetBrains Mono', monospace",
-        fontSize: '10px', letterSpacing: '0.15em',
-        color: 'var(--muted)', textDecoration: 'none',
-        textTransform: 'uppercase',
-        borderBottom: '0.5px solid rgba(255,255,255,0.15)',
-        paddingBottom: '2px',
-        transition: 'color 0.3s, border-color 0.3s',
-      }}
-      onMouseEnter={e => { (e.target as HTMLElement).style.color = 'var(--white)'; (e.target as HTMLElement).style.borderBottomColor = 'var(--white)' }}
-      onMouseLeave={e => { (e.target as HTMLElement).style.color = 'var(--muted)'; (e.target as HTMLElement).style.borderBottomColor = 'rgba(255,255,255,0.15)' }}
-      >
-        Get in touch →
-      </a>
+      {/* "Get in touch" was here — moved into the hero where it's actually visible. */}
     </nav>
   )
 }
