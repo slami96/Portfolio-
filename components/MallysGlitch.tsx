@@ -1,153 +1,164 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
 
 // ── Screenshots ───────────────────────────────────────────────────────────
-// These use a live full-page screenshot service. It works, but it can be slow
-// and occasionally rate-limited. For best speed + reliability, take two real
-// full-page screenshots, drop them in /public/mallys/, and swap the URLs below:
-//   const BEFORE_URL = '/mallys/before.png'
-//   const AFTER_URL  = '/mallys/after.png'
-const BEFORE_URL = 'https://image.thum.io/get/width/1200/fullpage/https://www.mallys.cz'
-const AFTER_URL  = 'https://image.thum.io/get/width/1200/fullpage/https://mallysremake-b4yb.vercel.app'
+// Full-page captures. For sharp full-screen results, replace with real static
+// screenshots in /public/mallys/ (e.g. '/mallys/before.png', '/mallys/after.png').
+const BEFORE_URL = 'https://image.thum.io/get/width/1600/fullpage/https://www.mallys.cz'
+const AFTER_URL  = 'https://image.thum.io/get/width/1600/fullpage/https://mallysremake-b4yb.vercel.app'
 const LIVE_URL   = 'https://mallysremake-b4yb.vercel.app'
 
 export default function MallysGlitch() {
-  const [view, setView] = useState<'before' | 'after'>('after')
-  const frameRef = useRef<HTMLDivElement>(null)
-  const [shown, setShown] = useState(false)
+  const sectionRef  = useRef<HTMLDivElement>(null)
+  const beforeRef   = useRef<HTMLDivElement>(null)
+  const afterImgRef = useRef<HTMLImageElement>(null)
+  const titleWrapRef = useRef<HTMLDivElement>(null)
+  const titleRef    = useRef<HTMLHeadingElement>(null)
+  const afterTagRef = useRef<HTMLSpanElement>(null)
+  const beforeTagRef = useRef<HTMLSpanElement>(null)
 
-  // Gentle fade-up when the section scrolls into view
+  const [isDesktop, setIsDesktop] = useState(true)
+
   useEffect(() => {
-    const el = frameRef.current
-    if (!el) return
-    const io = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) { setShown(true); io.disconnect() } },
-      { threshold: 0.2 }
-    )
-    io.observe(el)
-    return () => io.disconnect()
+    const mq = window.matchMedia('(min-width: 900px)')
+    const update = () => setIsDesktop(mq.matches)
+    update()
+    mq.addEventListener('change', update)
+    return () => mq.removeEventListener('change', update)
   }, [])
 
-  const host = view === 'after' ? 'mallysremake-b4yb.vercel.app' : 'mallys.cz'
+  useEffect(() => {
+    if (!isDesktop || !sectionRef.current) return
 
-  const tabBase: React.CSSProperties = {
-    fontFamily: "'JetBrains Mono', monospace", fontSize: '10px',
-    letterSpacing: '0.12em', textTransform: 'uppercase',
-    padding: '8px 18px', borderRadius: '100px', cursor: 'pointer',
-    border: '0.5px solid var(--border)', background: 'transparent',
-    transition: 'all 0.3s ease',
+    const SCROLL_DIST = window.innerHeight * 4
+
+    // How far to pan the redesign so its bottom reaches the bottom of the screen.
+    const panDist = () => {
+      const img = afterImgRef.current, frame = sectionRef.current
+      if (!img || !frame) return 0
+      return Math.max(0, img.offsetHeight - frame.offsetHeight)
+    }
+
+    const ctx = gsap.context(() => {
+      // split title into characters for the slam
+      const title = titleRef.current!
+      title.innerHTML = title.textContent!.trim().split('').map(c =>
+        `<span style="display:inline-block;overflow:hidden"><span class="mch" style="display:inline-block">${c}</span></span>`
+      ).join('')
+
+      const tl = gsap.timeline()
+
+      tl
+        // 1 — title slam in over the (dimmed) Before
+        .from(title.querySelectorAll('.mch'), { yPercent: 120, opacity: 0, stagger: 0.05, duration: 1, ease: 'power4.out' }, 0)
+        .to(titleWrapRef.current, { duration: 1 }, 1)          // hold
+        .to(titleWrapRef.current, { opacity: 0, duration: 0.8, ease: 'power2.inOut' }, 2)
+        // 2 — wipe Before away, revealing the redesign full-bleed
+        .to(beforeRef.current, { clipPath: 'inset(0 0 0 100%)', duration: 1.6, ease: 'power2.inOut' }, 2.2)
+        .to(beforeTagRef.current, { opacity: 0, duration: 0.4 }, 2.2)
+        .fromTo(afterTagRef.current, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.5 }, 3.4)
+        // 3 — pan the full redesign top -> bottom (clean vertical move, no zoom)
+        .to(afterImgRef.current, { y: () => -panDist(), duration: 7, ease: 'none' }, 3.9)
+
+      ScrollTrigger.create({
+        trigger: sectionRef.current,
+        start: 'top top',
+        end: () => `+=${SCROLL_DIST}`,
+        pin: true, pinSpacing: true, anticipatePin: 1,
+        scrub: 1, invalidateOnRefresh: true,
+        refreshPriority: 1,
+        animation: tl,
+      })
+    }, sectionRef)
+
+    return () => ctx.revert()
+  }, [isDesktop])
+
+  const tag: React.CSSProperties = {
+    position: 'absolute', bottom: '28px', fontFamily: "'JetBrains Mono', monospace",
+    fontSize: '11px', letterSpacing: '0.15em', textTransform: 'uppercase',
+    padding: '8px 16px', borderRadius: '6px', backdropFilter: 'blur(6px)', zIndex: 6,
   }
-  const tabActive: React.CSSProperties = {
-    ...tabBase, background: 'var(--gold)', color: '#0b0b0b',
-    borderColor: 'var(--gold)', fontWeight: 700,
-  }
-  const tabIdle: React.CSSProperties = { ...tabBase, color: 'var(--muted)' }
 
-  const layers: { key: 'before' | 'after'; url: string }[] = [
-    { key: 'before', url: BEFORE_URL },
-    { key: 'after',  url: AFTER_URL },
-  ]
+  // ── MOBILE: simple, clear, scrollable (no pin) ──
+  if (!isDesktop) {
+    return (
+      <section style={{ background: 'var(--bg2)', borderTop: '0.5px solid var(--border)', padding: '72px 6vw 80px' }}>
+        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '10px', letterSpacing: '0.25em', color: 'var(--gold)', textTransform: 'uppercase' }}>Case Study — UX Redesign</span>
+        <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 'clamp(44px,15vw,80px)', fontWeight: 800, letterSpacing: '-0.03em', color: 'var(--white)', lineHeight: 1, margin: '12px 0 36px' }}>Mallys Redesign</h2>
 
-  return (
-    <section style={{ background: 'var(--bg2)', borderTop: '0.5px solid var(--border)', padding: '100px 7vw 90px' }}>
-      <style>{`
-        @keyframes mallyScroll {
-          from { background-position: center top; }
-          to   { background-position: center bottom; }
-        }
-        .mally-page { animation: mallyScroll 26s ease-in-out infinite alternate; }
-        .mally-frame:hover .mally-page { animation-play-state: paused; }
-        @media (prefers-reduced-motion: reduce) {
-          .mally-page { animation: none; background-position: center top; }
-        }
-      `}</style>
-
-      {/* Header */}
-      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '10px', letterSpacing: '0.2em', color: 'var(--gold)', textTransform: 'uppercase', marginBottom: '1rem', display: 'block' }}>
-        Case Study — UX Redesign
-      </span>
-      <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 'clamp(34px,5vw,64px)', fontWeight: 700, letterSpacing: '-0.025em', lineHeight: 1.08, marginBottom: '2rem' }}>
-        Mallys · Before<br />&amp; After
-      </h2>
-
-      {/* Before / After toggle */}
-      <div role="tablist" aria-label="Compare designs" style={{ display: 'flex', gap: '10px', marginBottom: '28px' }}>
-        <button role="tab" aria-selected={view === 'before'} onClick={() => setView('before')} style={view === 'before' ? tabActive : tabIdle}>
-          Before
-        </button>
-        <button role="tab" aria-selected={view === 'after'} onClick={() => setView('after')} style={view === 'after' ? tabActive : tabIdle}>
-          After
-        </button>
-      </div>
-
-      {/* Browser frame */}
-      <div
-        ref={frameRef}
-        className="mally-frame"
-        style={{
-          opacity: shown ? 1 : 0,
-          transform: shown ? 'translateY(0)' : 'translateY(24px)',
-          transition: 'opacity 0.8s ease, transform 0.8s ease',
-          borderRadius: '12px', overflow: 'hidden',
-          border: '0.5px solid var(--border)',
-          boxShadow: '0 40px 120px rgba(0,0,0,0.5)', background: '#000',
-        }}
-      >
-        {/* Top bar */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '12px 16px', background: '#111', borderBottom: '0.5px solid var(--border)' }}>
-          <div style={{ display: 'flex', gap: '7px' }}>
-            {['#ff5f57', '#febc2e', '#28c840'].map(c => (
-              <span key={c} style={{ width: 11, height: 11, borderRadius: '50%', background: c, opacity: 0.85 }} />
-            ))}
-          </div>
-          <div style={{ flex: 1, maxWidth: 420, margin: '0 auto', textAlign: 'center', fontFamily: "'JetBrains Mono', monospace", fontSize: '11px', color: 'var(--muted)', background: '#0b0b0b', border: '0.5px solid var(--border)', borderRadius: '100px', padding: '5px 14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {host}
-          </div>
-          <span style={{ width: 47, flexShrink: 0 }} aria-hidden /> {/* balances the dots */}
-        </div>
-
-        {/* Viewport — full page scrolls through here */}
-        <div style={{ position: 'relative', width: '100%', height: 'clamp(380px, 64vh, 700px)', overflow: 'hidden', background: '#fff' }}>
-          {layers.map(({ key, url }) => (
-            <div
-              key={key}
-              className="mally-page"
-              style={{
-                position: 'absolute', inset: 0,
-                backgroundImage: `url("${url}")`,
-                backgroundRepeat: 'no-repeat',
-                backgroundSize: '100% auto',
-                opacity: view === key ? 1 : 0,
-                transition: 'opacity 0.5s ease',
-                pointerEvents: 'none',
-              }}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Hint + live link */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', flexWrap: 'wrap', gap: '12px' }}>
-        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', letterSpacing: '0.12em', color: 'var(--muted)', textTransform: 'uppercase' }}>
-          ↕ Scrolling the full page · hover to pause
-        </span>
-        <a href={LIVE_URL} target="_blank" rel="noopener noreferrer" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '10px', color: 'var(--cream)', textDecoration: 'none', letterSpacing: '0.08em', borderBottom: '0.5px solid rgba(232,213,183,0.3)', paddingBottom: '2px' }}>
-          View live redesign →
-        </a>
-      </div>
-
-      {/* Captions */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', padding: '48px 0 0', gap: '40px', borderTop: '0.5px solid var(--border)', marginTop: '48px' }}>
-        {[
-          ['The problem', 'The original mallys.cz lacked a clear brand voice, poor mobile experience, no product storytelling and a generic template feel that did not reflect the handmade craft quality.'],
-          ['The solution', 'Full redesign in Next.js 15 — cinematic Ken Burns hero, warm porcelain palette, bilingual CZ/EN toggle, GSAP scroll animations and a cart drawer system built from scratch.'],
-        ].map(([label, text]) => (
-          <div key={label}>
-            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: '10px' }}>{label}</div>
-            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.7 }}>{text}</p>
+        {[['Before', BEFORE_URL, 0.35], ['After', AFTER_URL, 0]].map(([label, url, gray]) => (
+          <div key={label as string} style={{ marginBottom: '28px' }}>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: label === 'After' ? 'var(--gold)' : 'var(--muted)', display: 'block', marginBottom: '10px' }}>{label as string}</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={url as string} alt={`Mallys ${label}`} style={{ width: '100%', height: 'auto', borderRadius: '8px', border: '0.5px solid var(--border)', filter: `grayscale(${gray})` }} />
           </div>
         ))}
-      </div>
-    </section>
+
+        <a href={LIVE_URL} target="_blank" rel="noopener noreferrer" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '11px', color: 'var(--cream)', textDecoration: 'none', letterSpacing: '0.08em', borderBottom: '0.5px solid rgba(232,213,183,0.3)', paddingBottom: '3px' }}>View live redesign →</a>
+
+        <div style={{ marginTop: '40px', paddingTop: '32px', borderTop: '0.5px solid var(--border)' }}>
+          {[['The problem', 'The original mallys.cz lacked a clear brand voice, poor mobile experience and a generic template feel that did not reflect the handmade craft quality.'], ['The solution', 'Full redesign in Next.js 15 — cinematic hero, warm porcelain palette, bilingual CZ/EN toggle, GSAP scroll animations and a cart drawer built from scratch.']].map(([l, t]) => (
+            <div key={l} style={{ marginBottom: '20px' }}>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: '8px' }}>{l}</div>
+              <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.55)', lineHeight: 1.7 }}>{t}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+    )
+  }
+
+  // ── DESKTOP: full-screen pinned reveal ──
+  return (
+    <>
+      <section ref={sectionRef} style={{ height: '100vh', width: '100%', position: 'relative', overflow: 'hidden', background: '#000', borderTop: '0.5px solid var(--border)' }}>
+        {/* AFTER layer (beneath) — the redesign that pans */}
+        <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', background: '#fff' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            ref={afterImgRef}
+            src={AFTER_URL}
+            alt="Mallys redesign — full page"
+            onLoad={() => ScrollTrigger.refresh()}
+            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: 'auto', display: 'block', willChange: 'transform' }}
+          />
+        </div>
+
+        {/* BEFORE layer (on top) — gets wiped away to reveal the redesign */}
+        <div ref={beforeRef} style={{ position: 'absolute', inset: 0, overflow: 'hidden', background: '#fff', clipPath: 'inset(0 0 0 0)' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={BEFORE_URL} alt="Mallys original site" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: 'auto', display: 'block', filter: 'grayscale(0.4) brightness(0.92)' }} />
+          <span ref={beforeTagRef} style={{ ...tag, left: '32px', background: 'rgba(0,0,0,0.6)', color: 'rgba(255,255,255,0.85)' }}>Before · mallys.cz</span>
+        </div>
+
+        {/* AFTER tag (revealed after the wipe) */}
+        <span ref={afterTagRef} style={{ ...tag, right: '32px', background: 'rgba(200,169,110,0.18)', border: '0.5px solid rgba(200,169,110,0.45)', color: 'var(--gold)', opacity: 0 }}>After · Redesign</span>
+
+        {/* TITLE overlay */}
+        <div ref={titleWrapRef} style={{ position: 'absolute', inset: 0, zIndex: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(8,8,8,0.55)' }}>
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '12px', letterSpacing: '0.3em', color: 'var(--gold)', textTransform: 'uppercase', marginBottom: '1.5rem' }}>Case Study — UX Redesign</span>
+          <h2 ref={titleRef} style={{ fontFamily: "'Syne', sans-serif", fontSize: 'clamp(70px,15vw,260px)', fontWeight: 800, letterSpacing: '-0.04em', color: 'var(--white)', lineHeight: 0.9 }}>MALLYS</h2>
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '10px', letterSpacing: '0.2em', color: 'var(--muted)', textTransform: 'uppercase', marginTop: '1.5rem' }}>Scroll to reveal ↓</span>
+        </div>
+
+        {/* live link */}
+        <a href={LIVE_URL} target="_blank" rel="noopener noreferrer" style={{ position: 'absolute', top: '28px', right: '32px', zIndex: 7, fontFamily: "'JetBrains Mono', monospace", fontSize: '10px', color: 'var(--white)', textDecoration: 'none', letterSpacing: '0.08em', background: 'rgba(0,0,0,0.5)', padding: '8px 14px', borderRadius: '6px', backdropFilter: 'blur(6px)' }}>View live →</a>
+      </section>
+
+      {/* Problem / solution — normal flow below the pinned reveal */}
+      <section style={{ background: 'var(--bg2)', padding: '90px 7vw', borderTop: '0.5px solid var(--border)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '48px' }}>
+          {[['The problem', 'The original mallys.cz lacked a clear brand voice, poor mobile experience, no product storytelling and a generic template feel that did not reflect the handmade craft quality.'], ['The solution', 'Full redesign in Next.js 15 — cinematic Ken Burns hero, warm porcelain palette, bilingual CZ/EN toggle, GSAP scroll animations and a cart drawer system built from scratch.']].map(([label, text]) => (
+            <div key={label}>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--gold)', marginBottom: '14px' }}>{label}</div>
+              <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.8 }}>{text}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+    </>
   )
 }
