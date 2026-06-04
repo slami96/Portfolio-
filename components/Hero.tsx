@@ -15,15 +15,25 @@ function splitChars(el: HTMLElement) {
   return el.querySelectorAll<HTMLElement>('.char')
 }
 
+// Smooth-scroll to a section using Lenis if present, else native fallback.
+function scrollToSection(selector: string) {
+  const el = document.querySelector(selector)
+  if (!el) return
+  const lenis = (window as unknown as { lenis?: { scrollTo: (t: Element, o?: object) => void } }).lenis
+  if (lenis) lenis.scrollTo(el, { offset: 0 })
+  else el.scrollIntoView({ behavior: 'smooth' })
+}
+
 export default function Hero() {
   const sectionRef  = useRef<HTMLElement>(null)
   const photoRef    = useRef<HTMLDivElement>(null)
   const dividerRef  = useRef<HTMLDivElement>(null)
   const descRef     = useRef<HTMLParagraphElement>(null)
-  const scrollRef   = useRef<HTMLDivElement>(null)
-  const scrollLineRef = useRef<HTMLDivElement>(null)
   const eyebrowRef  = useRef<HTMLParagraphElement>(null)
   const nameRef     = useRef<HTMLHeadingElement>(null)
+  const ctaRef      = useRef<HTMLDivElement>(null)
+  const scrollCueRef = useRef<HTMLButtonElement>(null)
+  const dotRef      = useRef<HTMLSpanElement>(null)
 
   useEffect(() => {
     const name = nameRef.current
@@ -38,9 +48,15 @@ export default function Hero() {
     gsap.to(photoRef.current,    { clipPath: 'circle(78% at 65% 50%)', duration: 1.3, delay: 0.2, ease: 'power3.out' })
     gsap.to(dividerRef.current,  { width: '100%', duration: 0.9, delay: 0.7, ease: 'power2.out' })
     gsap.to(descRef.current,     { opacity: 1, duration: 0.7, delay: 0.85, ease: 'power2.out' })
-    gsap.to('.hero-pill',        { opacity: 1, y: 0, duration: 0.55, stagger: 0.07, delay: 1.0, ease: 'power2.out' })
-    gsap.to(scrollRef.current,   { opacity: 1, duration: 0.5, delay: 1.3 })
-    gsap.to(scrollLineRef.current, { scaleX: 1, duration: 0.7, delay: 1.35, ease: 'power2.out' })
+    gsap.to(ctaRef.current,      { opacity: 1, y: 0, duration: 0.6, delay: 1.0, ease: 'power2.out' })
+    gsap.to('.hero-pill',        { opacity: 1, y: 0, duration: 0.55, stagger: 0.07, delay: 1.15, ease: 'power2.out' })
+    gsap.to(scrollCueRef.current, { opacity: 1, duration: 0.6, delay: 1.4 })
+
+    // Looping bounce on the scroll-cue dot
+    const dotTween = gsap.to(dotRef.current, {
+      y: 16, duration: 0.9, ease: 'sine.inOut', repeat: -1, yoyo: true,
+    })
+    return () => { dotTween.kill() }
   }, [])
 
   return (
@@ -77,16 +93,50 @@ export default function Hero() {
           marginBottom: '2rem',
         }} />
 
+        {/* New, professional, readable intro (option C) */}
         <p ref={descRef} style={{
-          fontSize: 'clamp(13px,1.2vw,16px)',
-          color: 'var(--muted)', lineHeight: 1.8,
-          maxWidth: '400px', marginBottom: '2.8rem', opacity: 0,
+          fontSize: 'clamp(15px,1.35vw,19px)',
+          color: 'rgba(242,240,237,0.72)', lineHeight: 1.7,
+          maxWidth: '460px', marginBottom: '2.4rem', opacity: 0,
         }}>
-          Building digital experiences where design craft meets technical
-          precision — from the Alpine peaks of Slovakia to the studios of Denmark.
+          I help brands and startups stand out online — blending design craft
+          with front-end engineering.
         </p>
 
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+        {/* CTAs (moved out of the nav, now front and centre) */}
+        <div ref={ctaRef} style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', marginBottom: '2.4rem', opacity: 0, transform: 'translateY(10px)' }}>
+          <button
+            onClick={() => scrollToSection('#contact')}
+            style={{
+              fontFamily: "'JetBrains Mono', monospace", fontSize: '12px',
+              letterSpacing: '0.08em', textTransform: 'uppercase',
+              padding: '14px 26px', borderRadius: '100px', cursor: 'pointer',
+              background: 'var(--cream)', color: '#0b0b0b', border: '0.5px solid var(--cream)',
+              fontWeight: 700, transition: 'transform 0.3s ease, background 0.3s ease',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-2px)')}
+            onMouseLeave={e => (e.currentTarget.style.transform = 'translateY(0)')}
+          >
+            Get in touch
+          </button>
+          <button
+            onClick={() => scrollToSection('#projects-wrap')}
+            style={{
+              fontFamily: "'JetBrains Mono', monospace", fontSize: '12px',
+              letterSpacing: '0.08em', textTransform: 'uppercase',
+              padding: '14px 26px', borderRadius: '100px', cursor: 'pointer',
+              background: 'transparent', color: 'var(--white)',
+              border: '0.5px solid rgba(255,255,255,0.25)',
+              transition: 'border-color 0.3s ease, transform 0.3s ease',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--cream)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; e.currentTarget.style.transform = 'translateY(0)' }}
+          >
+            View work
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '3rem' }}>
           {['Next.js 16','GSAP','Three.js','UX Design','Vercel'].map(tag => (
             <span key={tag} className="hero-pill" style={{
               fontFamily: "'JetBrains Mono', monospace",
@@ -97,6 +147,33 @@ export default function Hero() {
             }}>{tag}</span>
           ))}
         </div>
+
+        {/* Scroll cue — bigger, centred under the text, clickable, animated */}
+        <button
+          ref={scrollCueRef}
+          onClick={() => scrollToSection('#projects-wrap')}
+          aria-label="Scroll to work"
+          style={{
+            opacity: 0, background: 'none', border: 'none', cursor: 'pointer',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px',
+            margin: '0 auto', padding: '8px', color: 'var(--muted)',
+            transition: 'color 0.3s ease',
+          }}
+          onMouseEnter={e => (e.currentTarget.style.color = 'var(--cream)')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'var(--muted)')}
+        >
+          <span style={{
+            fontFamily: "'JetBrains Mono', monospace", fontSize: '11px',
+            letterSpacing: '0.25em', textTransform: 'uppercase',
+          }}>Scroll</span>
+          <span style={{ position: 'relative', width: '1px', height: '46px', background: 'rgba(255,255,255,0.18)' }}>
+            <span ref={dotRef} style={{
+              position: 'absolute', top: 0, left: '-2px',
+              width: '5px', height: '5px', borderRadius: '50%',
+              background: 'var(--cream)',
+            }} />
+          </span>
+        </button>
       </div>
 
       {/* Photo */}
@@ -116,21 +193,6 @@ export default function Hero() {
           background: 'linear-gradient(to right, var(--bg) 0%, transparent 40%)',
           pointerEvents: 'none',
         }} />
-      </div>
-
-      {/* Scroll indicator */}
-      <div ref={scrollRef} style={{
-        position: 'absolute', bottom: '34px', left: '7vw',
-        zIndex: 2, display: 'flex', alignItems: 'center', gap: '12px',
-        fontFamily: "'JetBrains Mono', monospace",
-        fontSize: '9px', letterSpacing: '0.2em',
-        color: 'var(--muted)', textTransform: 'uppercase', opacity: 0,
-      }}>
-        <div ref={scrollLineRef} style={{
-          width: '40px', height: '0.5px', background: 'var(--muted)',
-          transform: 'scaleX(0)', transformOrigin: 'left',
-        }} />
-        Scroll
       </div>
     </section>
   )
