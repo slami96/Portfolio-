@@ -72,7 +72,7 @@ export default function Contact() {
       </h2>
 
       {/* ★ Replace with your real email */}
-      <a ref={emailRef} href="mailto:your@email.com" style={{
+      <a ref={emailRef} href="mailto:adam.slamen@gmail.com" style={{
         fontFamily: "'Syne', sans-serif",
         fontSize: 'clamp(26px,4.2vw,62px)',
         fontWeight: 700, letterSpacing: '-0.03em',
@@ -84,7 +84,7 @@ export default function Contact() {
       onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--cream)'; (e.currentTarget as HTMLElement).style.borderBottomColor = 'var(--cream)' }}
       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--white)'; (e.currentTarget as HTMLElement).style.borderBottomColor = 'transparent' }}
       >
-        your@email.com
+        adam.slamen@gmail.com
       </a>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '68px', paddingTop: '32px', borderTop: '0.5px solid var(--border)' }}>
