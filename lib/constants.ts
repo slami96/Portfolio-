@@ -6,11 +6,20 @@ export const MARQUEE_ITEMS = [
   'Print Design','Canvas API','WebGL','Web Audio API',
 ]
 
+// Flat list (kept for reference / any other consumers)
 export const SKILLS = [
   'Next.js 16','React 19','TypeScript','GSAP','Three.js','ScrollTrigger',
   'Lenis','Supabase','Firebase','Sanity CMS','Vercel','Figma',
   'UX Research','Interaction Design','Print Design','Brand Systems',
   'CSS / SCSS','Canvas API','WebGL','Node.js','Git','Web Audio API',
+]
+
+// Grouped for the Skills section's reel + categorized layout
+export const SKILL_CATEGORIES: { name: string; items: string[] }[] = [
+  { name: 'Frontend',       items: ['Next.js 16', 'React 19', 'TypeScript', 'CSS / SCSS', 'Node.js'] },
+  { name: 'Animation & 3D', items: ['GSAP', 'ScrollTrigger', 'Lenis', 'Three.js', 'WebGL', 'Canvas API', 'Web Audio API'] },
+  { name: 'Backend & CMS',  items: ['Supabase', 'Firebase', 'Sanity CMS', 'Vercel', 'Git'] },
+  { name: 'Design',         items: ['Figma', 'UX Research', 'Interaction Design', 'Print Design', 'Brand Systems'] },
 ]
 
 export const MENU_IMAGES = {
