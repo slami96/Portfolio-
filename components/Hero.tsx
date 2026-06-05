@@ -33,7 +33,7 @@ export default function Hero() {
   const nameRef     = useRef<HTMLHeadingElement>(null)
   const ctaRef      = useRef<HTMLDivElement>(null)
   const scrollCueRef = useRef<HTMLButtonElement>(null)
-  const dotRef      = useRef<HTMLSpanElement>(null)
+  const arrowRef    = useRef<HTMLSpanElement>(null)
 
   useEffect(() => {
     const name = nameRef.current
@@ -49,14 +49,13 @@ export default function Hero() {
     gsap.to(dividerRef.current,  { width: '100%', duration: 0.9, delay: 0.7, ease: 'power2.out' })
     gsap.to(descRef.current,     { opacity: 1, duration: 0.7, delay: 0.85, ease: 'power2.out' })
     gsap.to(ctaRef.current,      { opacity: 1, y: 0, duration: 0.6, delay: 1.0, ease: 'power2.out' })
-    gsap.to('.hero-pill',        { opacity: 1, y: 0, duration: 0.55, stagger: 0.07, delay: 1.15, ease: 'power2.out' })
     gsap.to(scrollCueRef.current, { opacity: 1, duration: 0.6, delay: 1.4 })
 
-    // Looping bounce on the scroll-cue dot
-    const dotTween = gsap.to(dotRef.current, {
-      y: 16, duration: 0.9, ease: 'sine.inOut', repeat: -1, yoyo: true,
+    // Quiet, slow bob on the scroll-cue arrow (no more bouncy line+dot)
+    const arrowTween = gsap.to(arrowRef.current, {
+      y: 6, duration: 1.2, ease: 'sine.inOut', repeat: -1, yoyo: true,
     })
-    return () => { dotTween.kill() }
+    return () => { arrowTween.kill() }
   }, [])
 
   return (
@@ -93,7 +92,6 @@ export default function Hero() {
           marginBottom: '2rem',
         }} />
 
-        {/* New, professional, readable intro (option C) */}
         <p ref={descRef} style={{
           fontSize: 'clamp(15px,1.35vw,19px)',
           color: 'rgba(242,240,237,0.72)', lineHeight: 1.7,
@@ -103,14 +101,14 @@ export default function Hero() {
           with front-end engineering.
         </p>
 
-        {/* CTAs (moved out of the nav, now front and centre) */}
-        <div ref={ctaRef} style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', marginBottom: '2.4rem', opacity: 0, transform: 'translateY(10px)' }}>
+        {/* Single CTA — it's the only action that leaves the page, so it's the only button. */}
+        <div ref={ctaRef} style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', opacity: 0, transform: 'translateY(10px)' }}>
           <button
             onClick={() => scrollToSection('#contact')}
             style={{
               fontFamily: "'JetBrains Mono', monospace", fontSize: '12px',
               letterSpacing: '0.08em', textTransform: 'uppercase',
-              padding: '14px 26px', borderRadius: '100px', cursor: 'pointer',
+              padding: '15px 30px', borderRadius: '100px', cursor: 'pointer',
               background: 'var(--cream)', color: '#0b0b0b', border: '0.5px solid var(--cream)',
               fontWeight: 700, transition: 'transform 0.3s ease, background 0.3s ease',
             }}
@@ -119,62 +117,31 @@ export default function Hero() {
           >
             Get in touch
           </button>
-          <button
-            onClick={() => scrollToSection('#projects-wrap')}
-            style={{
-              fontFamily: "'JetBrains Mono', monospace", fontSize: '12px',
-              letterSpacing: '0.08em', textTransform: 'uppercase',
-              padding: '14px 26px', borderRadius: '100px', cursor: 'pointer',
-              background: 'transparent', color: 'var(--white)',
-              border: '0.5px solid rgba(255,255,255,0.25)',
-              transition: 'border-color 0.3s ease, transform 0.3s ease',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--cream)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; e.currentTarget.style.transform = 'translateY(0)' }}
-          >
-            View work
-          </button>
         </div>
-
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '3rem' }}>
-          {['Next.js 16','GSAP','Three.js','UX Design','Vercel'].map(tag => (
-            <span key={tag} className="hero-pill" style={{
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: '9px', padding: '4px 11px',
-              border: '0.5px solid rgba(255,255,255,0.1)',
-              borderRadius: '100px', color: 'var(--muted)',
-              opacity: 0, transform: 'translateY(8px)',
-            }}>{tag}</span>
-          ))}
-        </div>
-
-        {/* Scroll cue — bigger, centred under the text, clickable, animated */}
-        <button
-          ref={scrollCueRef}
-          onClick={() => scrollToSection('#projects-wrap')}
-          aria-label="Scroll to work"
-          style={{
-            opacity: 0, background: 'none', border: 'none', cursor: 'pointer',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px',
-            margin: '0 auto', padding: '8px', color: 'var(--muted)',
-            transition: 'color 0.3s ease',
-          }}
-          onMouseEnter={e => (e.currentTarget.style.color = 'var(--cream)')}
-          onMouseLeave={e => (e.currentTarget.style.color = 'var(--muted)')}
-        >
-          <span style={{
-            fontFamily: "'JetBrains Mono', monospace", fontSize: '11px',
-            letterSpacing: '0.25em', textTransform: 'uppercase',
-          }}>Scroll</span>
-          <span style={{ position: 'relative', width: '1px', height: '46px', background: 'rgba(255,255,255,0.18)' }}>
-            <span ref={dotRef} style={{
-              position: 'absolute', top: 0, left: '-2px',
-              width: '5px', height: '5px', borderRadius: '50%',
-              background: 'var(--cream)',
-            }} />
-          </span>
-        </button>
       </div>
+
+      {/* Scroll cue — bottom-left, aligned to the text column (respects the grid) */}
+      <button
+        ref={scrollCueRef}
+        onClick={() => scrollToSection('#projects-wrap')}
+        aria-label="Scroll to work"
+        style={{
+          position: 'absolute', bottom: '40px', left: '7vw', zIndex: 3,
+          opacity: 0, background: 'none', border: 'none', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', gap: '12px', padding: '4px',
+          color: 'var(--muted)', transition: 'color 0.3s ease',
+        }}
+        onMouseEnter={e => (e.currentTarget.style.color = 'var(--cream)')}
+        onMouseLeave={e => (e.currentTarget.style.color = 'var(--muted)')}
+      >
+        <span style={{
+          fontFamily: "'JetBrains Mono', monospace", fontSize: '11px',
+          letterSpacing: '0.25em', textTransform: 'uppercase',
+        }}>Scroll</span>
+        <span ref={arrowRef} style={{
+          display: 'inline-block', fontFamily: "'JetBrains Mono', monospace", fontSize: '13px',
+        }}>↓</span>
+      </button>
 
       {/* Photo */}
       <div ref={photoRef} style={{
