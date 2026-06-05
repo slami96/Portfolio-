@@ -30,14 +30,15 @@ function BrowserFrame({ project, activeImg }: { project: Project; activeImg: num
         </div>
         <span style={{ width: 33, flexShrink: 0 }} aria-hidden />
       </div>
-      {/* contain (not cover) so the whole shot shows — gradient fills the letterbox as intentional padding */}
+      {/* cover + top center: frame fills edge-to-edge (no bars). Only the bottom
+          of a tall page is cropped — the hero/top always shows, nothing clipped on the sides. */}
       <div style={{ position: 'relative', aspectRatio: '16 / 10', background: `linear-gradient(135deg,${project.fallbackFrom},${project.fallbackTo})` }}>
         <Placeholder project={project} />
         {[project.screenshotA, project.screenshotB].map((src, idx) => (
           // eslint-disable-next-line @next/next/no-img-element
           <img key={idx} src={src} alt={project.title}
             onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
-            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center', opacity: activeImg === idx ? 1 : 0, transition: 'opacity 0.7s ease' }} />
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center', opacity: activeImg === idx ? 1 : 0, transition: 'opacity 0.7s ease' }} />
         ))}
       </div>
     </div>
