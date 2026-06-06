@@ -31,8 +31,16 @@ export default function MallysGlitch() {
     if (!isDesktop || !sectionRef.current) return
 
     // Generous distance so the film stays deliberate even when scrolled fast.
-    const SCROLL_DIST = window.innerHeight * 6
+    const SCROLL_DIST = window.innerHeight * 7
     const vw = () => window.innerWidth
+    const vh = () => window.innerHeight
+
+    // sizes
+    const fullW = () => vw() * 0.62
+    const fullH = () => vh() * 0.74
+    const stackW = () => vw() * 0.56
+    const stackH = () => vh() * 0.32
+    const stackOffset = () => vh() * 0.19   // vertical gap from centre to each stacked card
 
     const ctx = gsap.context(() => {
       // split the title for the slam-in
@@ -44,9 +52,8 @@ export default function MallysGlitch() {
       const after = afterCardRef.current!
       const before = beforeCardRef.current!
 
-      // base positions: both centered (left/top 50% via CSS) and shifted by transforms
-      gsap.set(after,  { xPercent: -50, yPercent: -50, transformOrigin: 'center center', width: () => vw() * 0.62, x: () => vw() * 0.6, opacity: 0, scale: 0.92 })
-      gsap.set(before, { xPercent: -50, yPercent: -50, transformOrigin: 'center center', width: () => vw() * 0.42, x: () => -vw() * 0.6, opacity: 0 })
+      // base: both centred (left/top 50%) then offset by transforms, off-screen right, full size, hidden
+      gsap.set([after, before], { xPercent: -50, yPercent: -50, transformOrigin: 'center center', width: fullW, height: fullH, x: () => vw() * 0.62, y: 0, opacity: 0 })
 
       const tl = gsap.timeline()
       tl
@@ -54,20 +61,21 @@ export default function MallysGlitch() {
         .from(title.querySelectorAll('.mch'), { yPercent: 120, opacity: 0, stagger: 0.05, duration: 1, ease: 'power4.out' }, 0)
         .to(titleWrapRef.current, { duration: 1 }, 1)
         .to(titleWrapRef.current, { opacity: 0, duration: 0.7, ease: 'power2.inOut' }, 2)
-        // 2 — the redesign slides in from the right and settles (PRINT-style entrance)
-        .to(after, { x: 0, opacity: 1, scale: 1, duration: 1.4, ease: 'power3.out' }, 2.4)
-        .fromTo(afterPillRef.current, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.5 }, 3.6)
-        .to({}, { duration: 0.9 }, 4)                                   // hold on the result
-        // 3 — the old site appears beside it: after shifts right + shrinks, before slides in from left
-        .to(after,  { x: () => vw() * 0.23, width: () => vw() * 0.42, duration: 1.2, ease: 'power2.inOut' }, 5)
-        .to(before, { x: () => -vw() * 0.23, opacity: 1, duration: 1.2, ease: 'power2.inOut' }, 5.15)
-        .fromTo(beforePillRef.current, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.5 }, 6)
-        .to({}, { duration: 1.3 }, 6.4)                                 // hold on the comparison
-        // 4 — the old site exits, the redesign returns to centre, full (we end on the work)
-        .to(beforePillRef.current, { opacity: 0, duration: 0.4 }, 7.9)
-        .to(before, { x: () => -vw() * 0.62, opacity: 0, duration: 1, ease: 'power2.in' }, 8)
-        .to(after,  { x: 0, width: () => vw() * 0.62, duration: 1.1, ease: 'power2.inOut' }, 8.2)
-        .to({}, { duration: 0.7 }, 9.3)                                 // hold on the finished redesign
+        // 2 — BEFORE slides in from the right and settles full (the old site, first)
+        .to(before, { x: 0, opacity: 1, duration: 1.4, ease: 'power3.out' }, 2.4)
+        .fromTo(beforePillRef.current, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: 0.5 }, 3.4)
+        .to({}, { duration: 1 }, 4)                                     // hold on the old site
+        // 3 — BEFORE exits left, AFTER slides in full (the redesign, on its own)
+        .to(beforePillRef.current, { opacity: 0, duration: 0.4 }, 5)
+        .to(before, { x: () => -vw() * 0.62, opacity: 0, duration: 1.1, ease: 'power2.inOut' }, 5)
+        .to(after,  { x: 0, opacity: 1, duration: 1.3, ease: 'power3.out' }, 5.2)
+        .fromTo(afterPillRef.current, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: 0.5 }, 6.3)
+        .to({}, { duration: 1 }, 6.8)                                   // hold on the redesign
+        // 4 — STACK: after drops to the bottom + shrinks; before returns to the top + shrinks
+        .to(after,  { y: stackOffset, width: stackW, height: stackH, duration: 1.3, ease: 'power2.inOut' }, 7.9)
+        .to(before, { x: 0, y: () => -stackOffset(), width: stackW, height: stackH, opacity: 1, duration: 1.3, ease: 'power2.inOut' }, 7.9)
+        .fromTo(beforePillRef.current, { opacity: 0 }, { opacity: 1, duration: 0.5 }, 8.7)
+        .to({}, { duration: 0.9 }, 9.4)                                 // hold on the stacked comparison
 
       ScrollTrigger.create({
         trigger: sectionRef.current,
@@ -82,18 +90,17 @@ export default function MallysGlitch() {
     return () => ctx.revert()
   }, [isDesktop])
 
-  // Brand-chip labels — they carry their own background, so they read clearly
-  // over any screenshot regardless of its colours.
+  // Brand-chip label — sits ABOVE the card frame (outside the image), so it never covers content.
   const pillBase: React.CSSProperties = {
-    position: 'absolute', top: '18px', left: '18px', zIndex: 4,
+    position: 'absolute', top: '-34px', left: '0', zIndex: 5,
     fontFamily: "'JetBrains Mono', monospace", fontSize: '11px',
     letterSpacing: '0.18em', textTransform: 'uppercase',
-    padding: '8px 14px', borderRadius: '100px',
+    padding: '7px 14px', borderRadius: '100px', whiteSpace: 'nowrap',
   }
 
-  const cardBase: React.CSSProperties = {
-    position: 'absolute', left: '50%', top: '50%', height: '74vh',
-    overflow: 'hidden', borderRadius: '4px',
+  // Rounded, clipped image holder — the card wrapper itself is NOT clipped, so the pill shows above it.
+  const clip: React.CSSProperties = {
+    position: 'absolute', inset: 0, overflow: 'hidden', borderRadius: '4px',
     boxShadow: '0 50px 110px rgba(0,0,0,0.5)', border: '0.5px solid rgba(255,255,255,0.08)',
   }
 
@@ -103,14 +110,14 @@ export default function MallysGlitch() {
     ['My role', 'UX/UI design, brand direction and the full front-end build, delivered during my internship at Mallys.'],
   ]
 
-  // ── MOBILE: stacked before / after, no pin ──
+  // ── MOBILE: stacked before → after, no pin ──
   if (!isDesktop) {
     return (
       <section style={{ background: 'var(--bg2)', borderTop: '0.5px solid var(--border)', padding: '72px 6vw 80px' }}>
         <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '10px', letterSpacing: '0.25em', color: 'var(--gold)', textTransform: 'uppercase' }}>Case Study — UX Redesign</span>
         <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 'clamp(44px,15vw,80px)', fontWeight: 800, letterSpacing: '-0.03em', color: 'var(--white)', lineHeight: 1, margin: '12px 0 36px' }}>Mallys Redesign</h2>
 
-        {([['After', AFTER_URL, 0], ['Before', BEFORE_URL, 0.45]] as [string, string, number][]).map(([label, url, gray]) => (
+        {([['Before', BEFORE_URL, 0.4], ['After', AFTER_URL, 0]] as [string, string, number][]).map(([label, url, gray]) => (
           <div key={label} style={{ marginBottom: '28px' }}>
             <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: label === 'After' ? 'var(--gold)' : 'var(--muted)', display: 'block', marginBottom: '10px' }}>{label}</span>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -131,7 +138,7 @@ export default function MallysGlitch() {
     )
   }
 
-  // ── DESKTOP: pinned PRINT-style reveal ──
+  // ── DESKTOP: pinned before → after → stacked compare ──
   return (
     <>
       <section ref={sectionRef} style={{ height: '100vh', width: '100%', position: 'relative', overflow: 'hidden', background: '#000', borderTop: '0.5px solid var(--border)' }}>
@@ -140,18 +147,22 @@ export default function MallysGlitch() {
           <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '10px', letterSpacing: '0.2em', color: 'var(--gold)', textTransform: 'uppercase' }}>Case Study — UX Redesign</span>
         </div>
 
-        {/* BEFORE card (old site) */}
-        <div ref={beforeCardRef} style={{ ...cardBase, width: '42vw', opacity: 0 }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={BEFORE_URL} alt="Mallys original site" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center', filter: 'grayscale(0.3) brightness(0.92)', display: 'block' }} />
-          <span ref={beforePillRef} style={{ ...pillBase, background: 'rgba(8,8,8,0.7)', color: 'rgba(255,255,255,0.9)', border: '0.5px solid rgba(255,255,255,0.25)', opacity: 0 }}>Before</span>
+        {/* AFTER card (redesign) */}
+        <div ref={afterCardRef} style={{ position: 'absolute', left: '50%', top: '50%', width: '62vw', height: '74vh', opacity: 0, zIndex: 2 }}>
+          <span ref={afterPillRef} style={{ ...pillBase, background: 'var(--cream)', color: '#0b0b0b', fontWeight: 700, opacity: 0 }}>After · Redesign</span>
+          <div style={clip}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={AFTER_URL} alt="Mallys redesign" onLoad={() => ScrollTrigger.refresh()} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center', display: 'block' }} />
+          </div>
         </div>
 
-        {/* AFTER card (redesign) */}
-        <div ref={afterCardRef} style={{ ...cardBase, width: '62vw', opacity: 0 }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={AFTER_URL} alt="Mallys redesign" onLoad={() => ScrollTrigger.refresh()} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center', display: 'block' }} />
-          <span ref={afterPillRef} style={{ ...pillBase, background: 'var(--cream)', color: '#0b0b0b', fontWeight: 700, opacity: 0 }}>After · Redesign</span>
+        {/* BEFORE card (old site) */}
+        <div ref={beforeCardRef} style={{ position: 'absolute', left: '50%', top: '50%', width: '62vw', height: '74vh', opacity: 0, zIndex: 1 }}>
+          <span ref={beforePillRef} style={{ ...pillBase, background: 'rgba(8,8,8,0.72)', color: 'rgba(255,255,255,0.92)', border: '0.5px solid rgba(255,255,255,0.25)', opacity: 0 }}>Before · mallys.cz</span>
+          <div style={clip}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={BEFORE_URL} alt="Mallys original site" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center', filter: 'grayscale(0.3) brightness(0.92)', display: 'block' }} />
+          </div>
         </div>
 
         {/* TITLE overlay */}
