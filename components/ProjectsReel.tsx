@@ -30,7 +30,7 @@ function BrowserFrame({ project, activeImg }: { project: Project; activeImg: num
         </div>
         <span style={{ width: 33, flexShrink: 0 }} aria-hidden />
       </div>
-      {/* cover + top center: fills edge-to-edge, only the bottom of a tall page is cropped */}
+      {/* cover + top center: fills edge-to-edge, only the bottom of a tall page is trimmed */}
       <div style={{ position: 'relative', aspectRatio: '16 / 10', background: `linear-gradient(135deg,${project.fallbackFrom},${project.fallbackTo})` }}>
         <Placeholder project={project} />
         {[project.screenshotA, project.screenshotB].map((src, idx) => (
@@ -45,12 +45,12 @@ function BrowserFrame({ project, activeImg }: { project: Project; activeImg: num
 }
 
 // One device. contain-fit + screen aspect locked to a real iPhone so the captures
-// (which are already ~9:19.5) fill the screen with no trimming and no visible bars.
+// (already ~9:19.5) fill the screen with no trimming and no visible bars.
 function SinglePhone({ project, src, dim }: { project: Project; src?: string; dim?: boolean }) {
   return (
-    <div style={{ position: 'relative', height: 'min(68vh, 560px)', aspectRatio: '9 / 19.5', background: '#0b0b0b', borderRadius: 38, padding: 8, boxShadow: '0 40px 90px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.06)', filter: dim ? 'brightness(0.9)' : 'none' }}>
-      <div style={{ position: 'absolute', top: 15, left: '50%', transform: 'translateX(-50%)', width: 74, height: 21, background: '#000', borderRadius: 13, zIndex: 3 }} />
-      <div style={{ position: 'relative', width: '100%', height: '100%', borderRadius: 30, overflow: 'hidden', background: '#fff' }}>
+    <div style={{ position: 'relative', height: 'min(64vh, 520px)', aspectRatio: '9 / 19.5', background: '#0b0b0b', borderRadius: 36, padding: 8, boxShadow: '0 40px 90px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.06)', filter: dim ? 'brightness(0.95)' : 'none' }}>
+      <div style={{ position: 'absolute', top: 14, left: '50%', transform: 'translateX(-50%)', width: 70, height: 20, background: '#000', borderRadius: 12, zIndex: 3 }} />
+      <div style={{ position: 'relative', width: '100%', height: '100%', borderRadius: 28, overflow: 'hidden', background: '#fff' }}>
         <Placeholder project={project} />
         {src && (
           // eslint-disable-next-line @next/next/no-img-element
@@ -63,7 +63,8 @@ function SinglePhone({ project, src, dim }: { project: Project; src?: string; di
   )
 }
 
-// Two overlapping phones revealed one after another as the card scrolls in.
+// Two phones as a diagonal cascade: front lower-left, back upper-right.
+// Light overlap so the back screen stays readable; revealed one after another on scroll.
 function PhonePair({ project, hScrollRef, frameRef }: {
   project: Project; hScrollRef: ReturnType<typeof gsap.to> | null; frameRef: React.RefObject<HTMLDivElement | null>
 }) {
@@ -74,28 +75,30 @@ function PhonePair({ project, hScrollRef, frameRef }: {
     if (!hScrollRef || !frameRef.current || !frontRef.current || !backRef.current) return
     const frame = frameRef.current
 
-    // resting tilt on the back phone (kept separate from the reveal's y so it survives)
-    gsap.set(backRef.current, { rotation: 4, transformOrigin: 'center center' })
+    // resting offsets (kept separate from the reveal's y so they survive the tween):
+    // front tilts slightly left; back is raised and tilts right → a fanned pair.
+    gsap.set(frontRef.current, { rotation: -2, transformOrigin: 'center center' })
+    gsap.set(backRef.current,  { rotation: 6, yPercent: -15, transformOrigin: 'center center' })
 
-    // front phone enters first
+    // front enters first
     gsap.fromTo(frontRef.current,
       { y: 60, opacity: 0 },
       { y: 0, opacity: 1, ease: 'power2.out',
         scrollTrigger: { trigger: frame, containerAnimation: hScrollRef, start: 'left 88%', end: 'left 52%', scrub: 1 } })
 
-    // back phone follows, a little deeper into the scroll
+    // back rises in a little deeper into the scroll
     gsap.fromTo(backRef.current,
-      { y: 90, opacity: 0 },
+      { y: 95, opacity: 0 },
       { y: 0, opacity: 1, ease: 'power2.out',
-        scrollTrigger: { trigger: frame, containerAnimation: hScrollRef, start: 'left 72%', end: 'left 36%', scrub: 1 } })
+        scrollTrigger: { trigger: frame, containerAnimation: hScrollRef, start: 'left 70%', end: 'left 36%', scrub: 1 } })
   }, [hScrollRef]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 'min(72vh, 600px)' }}>
-      <div ref={frontRef} style={{ zIndex: 2, marginRight: '-80px', opacity: 0, willChange: 'transform, opacity' }}>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 'min(76vh, 640px)' }}>
+      <div ref={frontRef} style={{ zIndex: 2, marginRight: '-36px', opacity: 0, willChange: 'transform, opacity' }}>
         <SinglePhone project={project} src={project.mobileA} />
       </div>
-      <div ref={backRef} style={{ zIndex: 1, marginTop: '-30px', opacity: 0, willChange: 'transform, opacity' }}>
+      <div ref={backRef} style={{ zIndex: 1, opacity: 0, willChange: 'transform, opacity' }}>
         <SinglePhone project={project} src={project.mobileB} dim />
       </div>
     </div>
