@@ -46,8 +46,9 @@ export default function PrintRoom() {
   useEffect(() => {
     if (!isDesktop || !sectionRef.current) return
 
-    // Cinematic, but ~5 screens instead of 9 — still spacious, far less scrolling.
-    const SCROLL_DIST = window.innerHeight * 5
+    // Longer pinned distance = more wheel travel per beat, so fast scrolling
+    // can't blow past the two menu cards. (Was *5, which felt too quick.)
+    const SCROLL_DIST = window.innerHeight * 8
 
     // Build the timeline ONCE. We hand it straight to ScrollTrigger with
     // `scrub`, so it maps 1:1 to scroll position. No custom smoothing loop,
@@ -249,7 +250,7 @@ export default function PrintRoom() {
       <div ref={trEditorialRef} style={{ ...editorialWrap, background: '#F0EBE0' }}>
         <div style={{ height: 'calc(100vh - 160px)', display: 'flex', alignItems: 'center' }}>
           <div ref={trCardRef} style={{ height: '100%' }}>
-            <Image src="/menu-images/t1.jpg" alt="Tatraline cocktails" height={800} width={560} style={{ height: '100%', width: 'auto', borderRadius: '3px', boxShadow: '0 40px 90px rgba(0,0,0,0.22)', objectFit: 'contain' }} />
+            <Image src="/menu-images/t2.jpg" alt="Tatraline cocktails — page 2" height={800} width={560} style={{ height: '100%', width: 'auto', borderRadius: '3px', boxShadow: '0 40px 90px rgba(0,0,0,0.22)', objectFit: 'contain' }} />
           </div>
         </div>
         <div ref={trInfoRef}>
