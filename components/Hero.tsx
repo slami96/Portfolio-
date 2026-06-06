@@ -25,15 +25,15 @@ function scrollToSection(selector: string) {
 }
 
 export default function Hero() {
-  const sectionRef  = useRef<HTMLElement>(null)
-  const photoRef    = useRef<HTMLDivElement>(null)
-  const dividerRef  = useRef<HTMLDivElement>(null)
-  const descRef     = useRef<HTMLParagraphElement>(null)
-  const eyebrowRef  = useRef<HTMLParagraphElement>(null)
-  const nameRef     = useRef<HTMLHeadingElement>(null)
-  const ctaRef      = useRef<HTMLDivElement>(null)
+  const sectionRef   = useRef<HTMLElement>(null)
+  const photoRef     = useRef<HTMLDivElement>(null)
+  const dividerRef   = useRef<HTMLDivElement>(null)
+  const descRef      = useRef<HTMLParagraphElement>(null)
+  const eyebrowRef   = useRef<HTMLParagraphElement>(null)
+  const nameRef      = useRef<HTMLHeadingElement>(null)
+  const ctaRef       = useRef<HTMLDivElement>(null)
   const scrollCueRef = useRef<HTMLButtonElement>(null)
-  const arrowRef    = useRef<HTMLSpanElement>(null)
+  const dotRef       = useRef<HTMLSpanElement>(null)
 
   useEffect(() => {
     const name = nameRef.current
@@ -51,11 +51,11 @@ export default function Hero() {
     gsap.to(ctaRef.current,      { opacity: 1, y: 0, duration: 0.6, delay: 1.0, ease: 'power2.out' })
     gsap.to(scrollCueRef.current, { opacity: 1, duration: 0.6, delay: 1.4 })
 
-    // Quiet, slow bob on the scroll-cue arrow (no more bouncy line+dot)
-    const arrowTween = gsap.to(arrowRef.current, {
-      y: 6, duration: 1.2, ease: 'sine.inOut', repeat: -1, yoyo: true,
+    // Travelling dot inside the mouse outline — the recognisable "scroll" signal.
+    const dotTween = gsap.to(dotRef.current, {
+      y: 9, opacity: 0.25, duration: 1.1, ease: 'sine.inOut', repeat: -1, yoyo: true,
     })
-    return () => { arrowTween.kill() }
+    return () => { dotTween.kill() }
   }, [])
 
   return (
@@ -120,27 +120,34 @@ export default function Hero() {
         </div>
       </div>
 
-      {/* Scroll cue — bottom-left, aligned to the text column (respects the grid) */}
+      {/* Scroll cue — bottom-center, explicit + animated so nobody hunts for a hidden control */}
       <button
         ref={scrollCueRef}
         onClick={() => scrollToSection('#projects-wrap')}
-        aria-label="Scroll to work"
+        aria-label="Scroll to explore work"
         style={{
-          position: 'absolute', bottom: '40px', left: '7vw', zIndex: 3,
-          opacity: 0, background: 'none', border: 'none', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', gap: '12px', padding: '4px',
-          color: 'var(--muted)', transition: 'color 0.3s ease',
+          position: 'absolute', bottom: '30px', left: '50%', transform: 'translateX(-50%)',
+          zIndex: 3, opacity: 0, background: 'none', border: 'none', cursor: 'pointer',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px',
+          color: 'var(--cream)', padding: '6px 10px',
         }}
-        onMouseEnter={e => (e.currentTarget.style.color = 'var(--cream)')}
-        onMouseLeave={e => (e.currentTarget.style.color = 'var(--muted)')}
+        onMouseEnter={e => (e.currentTarget.style.opacity = '0.7')}
+        onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
       >
+        {/* mouse outline + travelling dot */}
+        <span style={{
+          width: '24px', height: '38px', border: '1.5px solid var(--cream)',
+          borderRadius: '13px', display: 'flex', justifyContent: 'center', paddingTop: '7px',
+          boxSizing: 'border-box',
+        }}>
+          <span ref={dotRef} style={{ width: '3px', height: '8px', borderRadius: '2px', background: 'var(--cream)' }} />
+        </span>
         <span style={{
           fontFamily: "'JetBrains Mono', monospace", fontSize: '11px',
-          letterSpacing: '0.25em', textTransform: 'uppercase',
-        }}>Scroll</span>
-        <span ref={arrowRef} style={{
-          display: 'inline-block', fontFamily: "'JetBrains Mono', monospace", fontSize: '13px',
-        }}>↓</span>
+          letterSpacing: '0.22em', textTransform: 'uppercase', whiteSpace: 'nowrap',
+        }}>
+          Scroll to explore work
+        </span>
       </button>
 
       {/* Photo */}
