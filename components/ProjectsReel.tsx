@@ -30,8 +30,7 @@ function BrowserFrame({ project, activeImg }: { project: Project; activeImg: num
         </div>
         <span style={{ width: 33, flexShrink: 0 }} aria-hidden />
       </div>
-      {/* cover + top center: frame fills edge-to-edge (no bars). Only the bottom
-          of a tall page is cropped — the hero/top always shows, nothing clipped on the sides. */}
+      {/* cover + top center: fills edge-to-edge, only the bottom of a tall page is cropped */}
       <div style={{ position: 'relative', aspectRatio: '16 / 10', background: `linear-gradient(135deg,${project.fallbackFrom},${project.fallbackTo})` }}>
         <Placeholder project={project} />
         {[project.screenshotA, project.screenshotB].map((src, idx) => (
@@ -45,21 +44,59 @@ function BrowserFrame({ project, activeImg }: { project: Project; activeImg: num
   )
 }
 
-function PhoneFrame({ project, activeImg }: { project: Project; activeImg: number }) {
-  const imgs = [project.mobileA, project.mobileB]
+// One device. contain-fit + screen aspect locked to a real iPhone so the captures
+// (which are already ~9:19.5) fill the screen with no trimming and no visible bars.
+function SinglePhone({ project, src, dim }: { project: Project; src?: string; dim?: boolean }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'center' }}>
-      <div style={{ position: 'relative', height: 'min(74vh, 620px)', aspectRatio: '9 / 19.5', background: '#0b0b0b', borderRadius: 42, padding: 9, boxShadow: '0 40px 90px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.06)' }}>
-        <div style={{ position: 'absolute', top: 18, left: '50%', transform: 'translateX(-50%)', width: 84, height: 24, background: '#000', borderRadius: 14, zIndex: 3 }} />
-        <div style={{ position: 'relative', width: '100%', height: '100%', borderRadius: 34, overflow: 'hidden', background: `linear-gradient(160deg,${project.fallbackFrom},${project.fallbackTo})` }}>
-          <Placeholder project={project} />
-          {imgs.map((src, idx) => src ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img key={idx} src={src} alt={project.title}
-              onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
-              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center', opacity: activeImg === idx ? 1 : 0, transition: 'opacity 0.7s ease' }} />
-          ) : null)}
-        </div>
+    <div style={{ position: 'relative', height: 'min(68vh, 560px)', aspectRatio: '9 / 19.5', background: '#0b0b0b', borderRadius: 38, padding: 8, boxShadow: '0 40px 90px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.06)', filter: dim ? 'brightness(0.9)' : 'none' }}>
+      <div style={{ position: 'absolute', top: 15, left: '50%', transform: 'translateX(-50%)', width: 74, height: 21, background: '#000', borderRadius: 13, zIndex: 3 }} />
+      <div style={{ position: 'relative', width: '100%', height: '100%', borderRadius: 30, overflow: 'hidden', background: '#fff' }}>
+        <Placeholder project={project} />
+        {src && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={src} alt={project.title}
+            onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center', display: 'block' }} />
+        )}
+      </div>
+    </div>
+  )
+}
+
+// Two overlapping phones revealed one after another as the card scrolls in.
+function PhonePair({ project, hScrollRef, frameRef }: {
+  project: Project; hScrollRef: ReturnType<typeof gsap.to> | null; frameRef: React.RefObject<HTMLDivElement | null>
+}) {
+  const frontRef = useRef<HTMLDivElement>(null)
+  const backRef  = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!hScrollRef || !frameRef.current || !frontRef.current || !backRef.current) return
+    const frame = frameRef.current
+
+    // resting tilt on the back phone (kept separate from the reveal's y so it survives)
+    gsap.set(backRef.current, { rotation: 4, transformOrigin: 'center center' })
+
+    // front phone enters first
+    gsap.fromTo(frontRef.current,
+      { y: 60, opacity: 0 },
+      { y: 0, opacity: 1, ease: 'power2.out',
+        scrollTrigger: { trigger: frame, containerAnimation: hScrollRef, start: 'left 88%', end: 'left 52%', scrub: 1 } })
+
+    // back phone follows, a little deeper into the scroll
+    gsap.fromTo(backRef.current,
+      { y: 90, opacity: 0 },
+      { y: 0, opacity: 1, ease: 'power2.out',
+        scrollTrigger: { trigger: frame, containerAnimation: hScrollRef, start: 'left 72%', end: 'left 36%', scrub: 1 } })
+  }, [hScrollRef]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 'min(72vh, 600px)' }}>
+      <div ref={frontRef} style={{ zIndex: 2, marginRight: '-80px', opacity: 0, willChange: 'transform, opacity' }}>
+        <SinglePhone project={project} src={project.mobileA} />
+      </div>
+      <div ref={backRef} style={{ zIndex: 1, marginTop: '-30px', opacity: 0, willChange: 'transform, opacity' }}>
+        <SinglePhone project={project} src={project.mobileB} dim />
       </div>
     </div>
   )
@@ -72,20 +109,18 @@ function ProjectCard({ project, hScrollRef, index, isGroupStart }: {
   const titRef   = useRef<HTMLDivElement>(null)
   const frameRef = useRef<HTMLDivElement>(null)
   const [activeImg, setActiveImg] = useState(0)
+  const isBrowser = project.device === 'browser'
 
   useEffect(() => {
-    if (!hScrollRef || !visRef.current || !titRef.current) return
+    if (!hScrollRef || !titRef.current) return
     const frame = frameRef.current!
-    if (project.device === 'browser') {
+    // The browser visual clips open on scroll. (iPhone projects animate their own
+    // two phones inside PhonePair, so visRef stays untouched for them.)
+    if (isBrowser && visRef.current) {
       gsap.fromTo(visRef.current,
         { clipPath: 'inset(0 100% 0 0 round 10px)' },
         { clipPath: 'inset(0 0% 0 0 round 10px)', ease: 'power2.out',
           scrollTrigger: { trigger: frame, containerAnimation: hScrollRef, start: 'left 85%', end: 'left 30%', scrub: 1 } })
-    } else {
-      gsap.fromTo(visRef.current,
-        { y: 60, opacity: 0 },
-        { y: 0, opacity: 1, ease: 'power2.out',
-          scrollTrigger: { trigger: frame, containerAnimation: hScrollRef, start: 'left 90%', end: 'left 45%', scrub: 1 } })
     }
     gsap.from(titRef.current,
       { yPercent: 105, duration: 0.9, ease: 'power3.out',
@@ -93,13 +128,14 @@ function ProjectCard({ project, hScrollRef, index, isGroupStart }: {
   }, [hScrollRef]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
+    if (!isBrowser) return
     const iv = setInterval(() => setActiveImg(p => p === 0 ? 1 : 0), 2800)
     return () => clearInterval(iv)
-  }, [])
+  }, [isBrowser])
 
-  const visualInitial: React.CSSProperties = project.device === 'browser'
+  const visualInitial: React.CSSProperties = isBrowser
     ? { clipPath: 'inset(0 100% 0 0 round 10px)', willChange: 'clip-path' }
-    : { opacity: 0, willChange: 'transform, opacity' }
+    : {}
 
   return (
     <div ref={frameRef} style={{
@@ -159,7 +195,7 @@ function ProjectCard({ project, hScrollRef, index, isGroupStart }: {
           </a>
         </div>
 
-        {/* Visual — the whole device frame is also a link */}
+        {/* Visual — the whole thing is a link */}
         <div ref={visRef} style={visualInitial}>
           <a
             href={project.url} target="_blank" rel="noopener noreferrer"
@@ -168,9 +204,9 @@ function ProjectCard({ project, hScrollRef, index, isGroupStart }: {
             onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-6px) scale(1.01)')}
             onMouseLeave={e => (e.currentTarget.style.transform = 'translateY(0) scale(1)')}
           >
-            {project.device === 'iphone'
-              ? <PhoneFrame project={project} activeImg={activeImg} />
-              : <BrowserFrame project={project} activeImg={activeImg} />}
+            {isBrowser
+              ? <BrowserFrame project={project} activeImg={activeImg} />
+              : <PhonePair project={project} hScrollRef={hScrollRef} frameRef={frameRef} />}
           </a>
         </div>
       </div>
