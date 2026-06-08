@@ -15,7 +15,6 @@ function splitChars(el: HTMLElement) {
   return el.querySelectorAll<HTMLElement>('.char')
 }
 
-// Smooth-scroll to a section using Lenis if present, else native fallback.
 function scrollToSection(selector: string) {
   const el = document.querySelector(selector)
   if (!el) return
@@ -51,7 +50,6 @@ export default function Hero() {
     gsap.to(ctaRef.current,      { opacity: 1, y: 0, duration: 0.6, delay: 1.0, ease: 'power2.out' })
     gsap.to(scrollCueRef.current, { opacity: 1, duration: 0.6, delay: 1.4 })
 
-    // Travelling dot inside the mouse outline — the recognisable "scroll" signal.
     const dotTween = gsap.to(dotRef.current, {
       y: 9, opacity: 0.25, duration: 1.1, ease: 'sine.inOut', repeat: -1, yoyo: true,
     })
@@ -101,7 +99,7 @@ export default function Hero() {
           with front-end engineering.
         </p>
 
-        {/* Single CTA — it's the only action that leaves the page, so it's the only button. */}
+        {/* Ghost CTA — matches the "View live site" buttons in the reel */}
         <div ref={ctaRef} style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', opacity: 0, transform: 'translateY(10px)' }}>
           <button
             onClick={() => scrollToSection('#contact')}
@@ -109,34 +107,38 @@ export default function Hero() {
               fontFamily: "'JetBrains Mono', monospace", fontSize: '12px',
               letterSpacing: '0.08em', textTransform: 'uppercase',
               padding: '15px 30px', borderRadius: '100px', cursor: 'pointer',
-              background: 'var(--cream)', color: '#0b0b0b', border: '0.5px solid var(--cream)',
-              fontWeight: 700, transition: 'transform 0.3s ease, background 0.3s ease',
+              background: 'transparent', color: 'var(--cream)',
+              border: '0.5px solid rgba(232,213,183,0.4)',
+              fontWeight: 500, transition: 'background 0.3s ease, color 0.3s ease, transform 0.3s ease',
             }}
-            onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-2px)')}
-            onMouseLeave={e => (e.currentTarget.style.transform = 'translateY(0)')}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--cream)'; e.currentTarget.style.color = '#0b0b0b'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cream)'; e.currentTarget.style.transform = 'translateY(0)' }}
           >
             Get in touch
           </button>
         </div>
       </div>
 
-      {/* Scroll cue — bottom-center, explicit + animated so nobody hunts for a hidden control */}
+      {/* Scroll cue — bottom-LEFT, on the dark side, clear of the portrait.
+          If your photo is actually on the LEFT in your build, change left:'7vw' → right:'7vw'
+          and alignItems:'flex-start' → 'flex-end'. */}
       <button
         ref={scrollCueRef}
         onClick={() => scrollToSection('#projects-wrap')}
         aria-label="Scroll to explore work"
         style={{
-          position: 'absolute', bottom: '30px', left: '50%', transform: 'translateX(-50%)',
+          position: 'absolute', bottom: '34px', left: '7vw',
           zIndex: 3, opacity: 0, background: 'none', border: 'none', cursor: 'pointer',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px',
-          color: 'var(--cream)', padding: '6px 10px',
+          display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '12px',
+          color: 'var(--cream)', padding: '6px 2px',
+          transition: 'opacity 0.3s ease',
         }}
-        onMouseEnter={e => (e.currentTarget.style.opacity = '0.7')}
+        onMouseEnter={e => (e.currentTarget.style.opacity = '0.65')}
         onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
       >
-        {/* mouse outline + travelling dot */}
+        {/* mouse outline + travelling dot (ghost / outlined — matches the CTA) */}
         <span style={{
-          width: '24px', height: '38px', border: '1.5px solid var(--cream)',
+          width: '24px', height: '38px', border: '1.5px solid rgba(232,213,183,0.55)',
           borderRadius: '13px', display: 'flex', justifyContent: 'center', paddingTop: '7px',
           boxSizing: 'border-box',
         }}>
@@ -145,6 +147,7 @@ export default function Hero() {
         <span style={{
           fontFamily: "'JetBrains Mono', monospace", fontSize: '11px',
           letterSpacing: '0.22em', textTransform: 'uppercase', whiteSpace: 'nowrap',
+          color: 'rgba(232,213,183,0.85)',
         }}>
           Scroll to explore work
         </span>
