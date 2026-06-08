@@ -107,7 +107,7 @@ export default function SocialMedia() {
         start: 'top top',
         end: () => `+=${SCROLL_DIST}`,
         pin: true, pinSpacing: true, anticipatePin: 1,
-        scrub: 1, invalidateOnRefresh: true, refreshPriority: 1,
+        scrub: 1, invalidateOnRefresh: true, refreshPriority: -1,
         animation: tl,
       })
     }, sectionRef)
@@ -131,7 +131,6 @@ export default function SocialMedia() {
         src={src}
         alt={`Social story ${i + 1}`}
         onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
-        onLoad={() => ScrollTrigger.refresh()}
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block' }}
       />
     </div>
