@@ -119,39 +119,45 @@ export default function Hero() {
         </div>
       </div>
 
-      {/* Scroll cue — bottom-LEFT, on the dark side, clear of the portrait.
-          If your photo is actually on the LEFT in your build, change left:'7vw' → right:'7vw'
-          and alignItems:'flex-start' → 'flex-end'. */}
-      <button
-        ref={scrollCueRef}
-        onClick={() => scrollToSection('#projects-wrap')}
-        aria-label="Scroll to explore work"
-        style={{
-          position: 'absolute', bottom: '34px', left: '7vw',
-          zIndex: 3, opacity: 0, background: 'none', border: 'none', cursor: 'pointer',
-          display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '12px',
-          color: 'var(--cream)', padding: '6px 2px',
-          transition: 'opacity 0.3s ease',
-        }}
-        onMouseEnter={e => (e.currentTarget.style.opacity = '0.65')}
-        onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
-      >
-        {/* mouse outline + travelling dot (ghost / outlined — matches the CTA) */}
-        <span style={{
-          width: '24px', height: '38px', border: '1.5px solid rgba(232,213,183,0.55)',
-          borderRadius: '13px', display: 'flex', justifyContent: 'center', paddingTop: '7px',
-          boxSizing: 'border-box',
-        }}>
-          <span ref={dotRef} style={{ width: '3px', height: '8px', borderRadius: '2px', background: 'var(--cream)' }} />
-        </span>
-        <span style={{
-          fontFamily: "'JetBrains Mono', monospace", fontSize: '11px',
-          letterSpacing: '0.22em', textTransform: 'uppercase', whiteSpace: 'nowrap',
-          color: 'rgba(232,213,183,0.85)',
-        }}>
-          Scroll to explore work
-        </span>
-      </button>
+      {/* Scroll cue — centred under the hero text, on the dark side (clear of the portrait).
+          The wrapper spans the same 56% width as the text column, so the cue sits at its centre.
+          To nudge it: change `bottom` (height) or the wrapper `width` (horizontal centre). */}
+      <div style={{
+        position: 'absolute', bottom: '40px', left: 0, width: '56%',
+        display: 'flex', justifyContent: 'center',
+        zIndex: 3, pointerEvents: 'none',
+      }}>
+        <button
+          ref={scrollCueRef}
+          onClick={() => scrollToSection('#projects-wrap')}
+          aria-label="Scroll to explore work"
+          style={{
+            pointerEvents: 'auto',
+            opacity: 0, background: 'none', border: 'none', cursor: 'pointer',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px',
+            color: 'var(--cream)', padding: '6px 10px',
+            transition: 'opacity 0.3s ease',
+          }}
+          onMouseEnter={e => (e.currentTarget.style.opacity = '0.65')}
+          onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+        >
+          {/* mouse outline + travelling dot (ghost / outlined — matches the CTA) */}
+          <span style={{
+            width: '24px', height: '38px', border: '1.5px solid rgba(232,213,183,0.55)',
+            borderRadius: '13px', display: 'flex', justifyContent: 'center', paddingTop: '7px',
+            boxSizing: 'border-box',
+          }}>
+            <span ref={dotRef} style={{ width: '3px', height: '8px', borderRadius: '2px', background: 'var(--cream)' }} />
+          </span>
+          <span style={{
+            fontFamily: "'JetBrains Mono', monospace", fontSize: '11px',
+            letterSpacing: '0.22em', textTransform: 'uppercase', whiteSpace: 'nowrap',
+            color: 'rgba(232,213,183,0.85)',
+          }}>
+            Scroll to explore work
+          </span>
+        </button>
+      </div>
 
       {/* Photo */}
       <div ref={photoRef} style={{
