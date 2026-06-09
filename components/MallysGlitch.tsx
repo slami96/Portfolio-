@@ -30,7 +30,7 @@ export default function MallysGlitch() {
   // MacBook screen cross-fade (after ↔ after-2) every 1.5s
   const [afterSlot, setAfterSlot] = useState(0)
   useEffect(() => {
-    const iv = setInterval(() => setAfterSlot(p => (p === 0 ? 1 : 0)), 1500)
+    const iv = setInterval(() => setAfterSlot(p => (p === 0 ? 1 : 0)), 2000)
     return () => clearInterval(iv)
   }, [])
 
@@ -120,7 +120,7 @@ export default function MallysGlitch() {
 
   const layerStyle: React.CSSProperties = { position: 'absolute', inset: 0, willChange: 'transform, opacity' }
   const imgStyle: React.CSSProperties = { width: '100%', height: '100%', objectFit: 'contain', display: 'block' }
-  const screenImg: React.CSSProperties = { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center', display: 'block', transition: 'opacity 0.7s ease' }
+  const screenImg: React.CSSProperties = { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center', display: 'block', transition: 'opacity 0.7s ease' }
 
   const copy: [string, string][] = [
     ['The problem', 'The original mallys.cz lacked a clear brand voice, had a poor mobile experience and no product storytelling — a generic template that didn’t reflect the handmade craft.'],
