@@ -44,19 +44,19 @@ function BrowserFrame({ project, activeImg }: { project: Project; activeImg: num
   )
 }
 
-// One device. contain-fit + screen aspect locked to a real iPhone so the captures
-// (already ~9:19.5) fill the screen with no trimming and no visible bars.
+// One device. cover-fit + top-aligned so the capture fills the screen edge-to-edge
+// like a real phone (no white bars). A sliver may be trimmed at the very bottom.
 function SinglePhone({ project, src, dim }: { project: Project; src?: string; dim?: boolean }) {
   return (
     <div style={{ position: 'relative', height: 'min(64vh, 520px)', aspectRatio: '9 / 19.5', background: '#0b0b0b', borderRadius: 36, padding: 8, boxShadow: '0 40px 90px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.06)', filter: dim ? 'brightness(0.95)' : 'none' }}>
       <div style={{ position: 'absolute', top: 14, left: '50%', transform: 'translateX(-50%)', width: 70, height: 20, background: '#000', borderRadius: 12, zIndex: 3 }} />
-      <div style={{ position: 'relative', width: '100%', height: '100%', borderRadius: 28, overflow: 'hidden', background: '#fff' }}>
+      <div style={{ position: 'relative', width: '100%', height: '100%', borderRadius: 28, overflow: 'hidden', background: '#0f0f12' }}>
         <Placeholder project={project} />
         {src && (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={src} alt={project.title}
             onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
-            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center', display: 'block' }} />
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center', display: 'block' }} />
         )}
       </div>
     </div>
