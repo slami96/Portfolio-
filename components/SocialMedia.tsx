@@ -23,11 +23,11 @@ function PhoneFrame({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
       position: 'relative', height: 'min(66vh, 560px)', aspectRatio: '9 / 19.5',
-      background: 'linear-gradient(135deg,#e8e9ec 0%,#c0c3ca 32%,#f3f4f6 50%,#b2b5bd 70%,#d4d6db 100%)', borderRadius: 38, padding: 8,
-      boxShadow: '0 50px 110px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(255,255,255,0.5)',
+      background: '#0b0b0b', borderRadius: 38, padding: 8,
+      boxShadow: '0 50px 110px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(255,255,255,0.06)',
     }}>
       <div style={{ position: 'absolute', top: 14, left: '50%', transform: 'translateX(-50%)', width: 74, height: 21, background: '#000', borderRadius: 12, zIndex: 4 }} />
-      <div style={{ position: 'relative', width: '100%', height: '100%', borderRadius: 30, overflow: 'hidden', background: '#0f0f12', boxShadow: 'inset 0 0 0 2px #0a0a0a' }}>
+      <div style={{ position: 'relative', width: '100%', height: '100%', borderRadius: 30, overflow: 'hidden', background: '#0f0f12' }}>
         {children}
       </div>
     </div>
