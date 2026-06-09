@@ -16,17 +16,18 @@ export default function MallysGlitch() {
   const titleRef     = useRef<HTMLHeadingElement>(null)
   const l1Ref = useRef<HTMLDivElement>(null)   // before 1
   const l2Ref = useRef<HTMLDivElement>(null)   // before 2
+  const l3Ref = useRef<HTMLDivElement>(null)   // after 1
+  const l4Ref = useRef<HTMLDivElement>(null)   // after 2
   const beforePillRef = useRef<HTMLSpanElement>(null)
   const afterPillRef  = useRef<HTMLSpanElement>(null)
-  // MacBook
-  const macWrapRef = useRef<HTMLDivElement>(null)
-  const lidRef     = useRef<HTMLDivElement>(null)
-  const screenARef = useRef<HTMLImageElement>(null)   // after 1 on screen
-  const screenBRef = useRef<HTMLImageElement>(null)   // after 2 on screen
+  // Editorial MacBook
+  const editorialRef = useRef<HTMLDivElement>(null)
+  const editLidRef   = useRef<HTMLDivElement>(null)
+  const editTextRef  = useRef<HTMLDivElement>(null)
 
   const [isDesktop, setIsDesktop] = useState(true)
 
-  // Editorial after-image cross-fade (after ↔ after-2) every 1.5s
+  // MacBook screen cross-fade (after ↔ after-2) every 1.5s
   const [afterSlot, setAfterSlot] = useState(0)
   useEffect(() => {
     const iv = setInterval(() => setAfterSlot(p => (p === 0 ? 1 : 0)), 1500)
@@ -44,25 +45,23 @@ export default function MallysGlitch() {
   useEffect(() => {
     if (!isDesktop || !sectionRef.current) return
 
-    const SCROLL_DIST = window.innerHeight * 7
+    const SCROLL_DIST = window.innerHeight * 6
 
     const ctx = gsap.context(() => {
+      // split the title for the slam-in
       const title = titleRef.current!
       title.innerHTML = title.textContent!.trim().split('').map(c =>
         `<span style="display:inline-block;overflow:hidden"><span class="mch" style="display:inline-block">${c}</span></span>`
       ).join('')
 
-      const l1 = l1Ref.current!, l2 = l2Ref.current!
+      const l1 = l1Ref.current!, l2 = l2Ref.current!, l3 = l3Ref.current!, l4 = l4Ref.current!
 
-      // base state
-      gsap.set(l2, { opacity: 0 })
-      gsap.set(macWrapRef.current, { opacity: 0 })
-      gsap.set(lidRef.current, { rotateX: -90 })          // MacBook closed
-      gsap.set(screenBRef.current, { opacity: 0 })        // after-2 hidden, after-1 showing
+      // base: all hidden; l1 slides in from the right, others cross-fade in place
+      gsap.set([l2, l3, l4], { opacity: 0 })
 
       const tl = gsap.timeline()
       tl
-        // 1 — MALLYS slams in on a blank stage, holds, clears
+        // 1 — MALLYS slams in, holds, clears
         .from(title.querySelectorAll('.mch'), { yPercent: 120, opacity: 0, stagger: 0.05, duration: 1, ease: 'power4.out' }, 0)
         .to(titleWrapRef.current, { duration: 1 }, 1)
         .to(titleWrapRef.current, { opacity: 0, duration: 0.7, ease: 'power2.inOut' }, 2)
@@ -74,18 +73,16 @@ export default function MallysGlitch() {
         .to(l1, { opacity: 0, duration: 0.8, ease: 'power2.inOut' }, 4.8)
         .fromTo(l2, { opacity: 0 }, { opacity: 1, duration: 0.8, ease: 'power2.inOut' }, 4.8)
         .to({}, { duration: 1 }, 5.6)                                  // hold on before 2
-        // 4 — clear the old site, bring in the MacBook (closed)
+        // 4 — AFTER 1 cross-fades in (the redesign) — pill swaps to "After"
         .to(l2, { opacity: 0, duration: 0.8, ease: 'power2.inOut' }, 6.6)
         .to(beforePillRef.current, { opacity: 0, duration: 0.4 }, 6.6)
-        .to(macWrapRef.current, { opacity: 1, duration: 0.6 }, 6.8)
-        // 5 — the lid OPENS on scroll, revealing the redesign (after 1)
-        .to(lidRef.current, { rotateX: 0, duration: 2.6, ease: 'power2.out' }, 7.2)
-        .fromTo(afterPillRef.current, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: 0.5 }, 8.2)
-        .to({}, { duration: 1 }, 9.8)                                  // hold on after 1 (open)
-        // 6 — screen cycles after 1 → after 2
-        .to(screenARef.current, { opacity: 0, duration: 0.8, ease: 'power2.inOut' }, 10.8)
-        .to(screenBRef.current, { opacity: 1, duration: 0.8, ease: 'power2.inOut' }, 10.8)
-        .to({}, { duration: 1.2 }, 11.6)                              // hold on after 2
+        .fromTo(l3, { opacity: 0 }, { opacity: 1, duration: 0.8, ease: 'power2.inOut' }, 6.6)
+        .fromTo(afterPillRef.current, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: 0.5 }, 7.0)
+        .to({}, { duration: 1 }, 7.6)                                  // hold on after 1
+        // 5 — AFTER 2 cross-fades in (more of the redesign)
+        .to(l3, { opacity: 0, duration: 0.8, ease: 'power2.inOut' }, 8.6)
+        .fromTo(l4, { opacity: 0 }, { opacity: 1, duration: 0.8, ease: 'power2.inOut' }, 8.6)
+        .to({}, { duration: 1.2 }, 9.4)                                // hold on after 2
 
       ScrollTrigger.create({
         trigger: sectionRef.current,
@@ -95,6 +92,19 @@ export default function MallysGlitch() {
         scrub: 1, invalidateOnRefresh: true, refreshPriority: 1,
         animation: tl,
       })
+
+      // ── EDITORIAL: MacBook opens as you scroll into the section ──
+      if (editLidRef.current && editorialRef.current) {
+        gsap.fromTo(editLidRef.current,
+          { rotateX: -90 },
+          { rotateX: 0, ease: 'none',
+            scrollTrigger: { trigger: editorialRef.current, start: 'top 80%', end: 'top 30%', scrub: true } })
+      }
+      if (editTextRef.current && editorialRef.current) {
+        gsap.from(editTextRef.current.children,
+          { opacity: 0, y: 24, duration: 0.8, stagger: 0.12, ease: 'power2.out',
+            scrollTrigger: { trigger: editorialRef.current, start: 'top 70%' } })
+      }
     }, sectionRef)
 
     return () => ctx.revert()
@@ -108,11 +118,9 @@ export default function MallysGlitch() {
     padding: '7px 14px', borderRadius: '100px', whiteSpace: 'nowrap',
   }
 
-  // Before-image layers: full image, contained on black (no cropping).
   const layerStyle: React.CSSProperties = { position: 'absolute', inset: 0, willChange: 'transform, opacity' }
   const imgStyle: React.CSSProperties = { width: '100%', height: '100%', objectFit: 'contain', display: 'block' }
-  // Laptop screen content: fills the screen like a real display, top-aligned.
-  const screenImg: React.CSSProperties = { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center', display: 'block' }
+  const screenImg: React.CSSProperties = { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center', display: 'block', transition: 'opacity 0.7s ease' }
 
   const copy: [string, string][] = [
     ['The problem', 'The original mallys.cz lacked a clear brand voice, had a poor mobile experience and no product storytelling — a generic template that didn’t reflect the handmade craft.'],
@@ -154,7 +162,7 @@ export default function MallysGlitch() {
     )
   }
 
-  // ── DESKTOP: pinned before 1 → before 2 → MacBook opens → after 1 → after 2 ──
+  // ── DESKTOP: pinned film (before 1/2 → after 1/2) + editorial MacBook ──
   return (
     <>
       <section ref={sectionRef} style={{ height: '100vh', width: '100%', position: 'relative', overflow: 'hidden', background: '#000', borderTop: '0.5px solid var(--border)' }}>
@@ -163,9 +171,11 @@ export default function MallysGlitch() {
           <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '10px', letterSpacing: '0.2em', color: 'var(--gold)', textTransform: 'uppercase' }}>Case Study — UX Redesign</span>
         </div>
 
-        {/* BEFORE stage — 2 contained image layers (full image) */}
-        <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', width: '74vw', height: '82vh', zIndex: 1 }}>
+        {/* STAGE — 4 stacked image layers, all contained (full image) */}
+        <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', width: '74vw', height: '82vh', zIndex: 2 }}>
           <span ref={beforePillRef} style={{ ...pillBase, background: 'rgba(8,8,8,0.72)', color: 'rgba(255,255,255,0.92)', border: '0.5px solid rgba(255,255,255,0.25)', opacity: 0 }}>Before · mallys.cz</span>
+          <span ref={afterPillRef}  style={{ ...pillBase, background: 'var(--cream)', color: '#0b0b0b', fontWeight: 700, opacity: 0 }}>After · Redesign</span>
+
           <div ref={l1Ref} style={layerStyle}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={BEFORE_URL} alt="Mallys original site — 1" onLoad={() => ScrollTrigger.refresh()} style={imgStyle} />
@@ -174,42 +184,13 @@ export default function MallysGlitch() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={BEFORE_URL_2} alt="Mallys original site — 2" style={imgStyle} />
           </div>
-        </div>
-
-        {/* MACBOOK — opens on scroll, screen cycles after 1 → after 2 */}
-        <div ref={macWrapRef} style={{
-          position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)',
-          zIndex: 2, opacity: 0, perspective: '2200px',
-          display: 'flex', flexDirection: 'column', alignItems: 'center',
-        }}>
-          <span ref={afterPillRef} style={{ ...pillBase, top: '-46px', left: '50%', transform: 'translateX(-50%)', background: 'var(--cream)', color: '#0b0b0b', fontWeight: 700, opacity: 0 }}>After · Redesign</span>
-
-          {/* lid (screen) — rotates around its bottom edge (the hinge) */}
-          <div ref={lidRef} style={{
-            width: 'min(62vw, 900px)', aspectRatio: '16 / 10',
-            transformOrigin: 'center bottom', transform: 'rotateX(-90deg)',
-            background: '#0a0a0a', borderRadius: '16px 16px 5px 5px',
-            padding: '10px 10px 11px', boxSizing: 'border-box',
-            boxShadow: '0 50px 90px rgba(0,0,0,0.55)', position: 'relative',
-            willChange: 'transform',
-          }}>
-            <div style={{ position: 'absolute', top: 6, left: '50%', transform: 'translateX(-50%)', width: 92, height: 6, background: '#000', borderRadius: 4, zIndex: 2 }} />
-            <div style={{ position: 'relative', width: '100%', height: '100%', borderRadius: '4px', overflow: 'hidden', background: '#0d0d10' }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img ref={screenARef} src={AFTER_URL} alt="Mallys redesign — 1" onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }} style={screenImg} />
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img ref={screenBRef} src={AFTER_URL_2} alt="Mallys redesign — 2" onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }} style={screenImg} />
-            </div>
+          <div ref={l3Ref} style={layerStyle}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={AFTER_URL} alt="Mallys redesign — 1" style={imgStyle} />
           </div>
-
-          {/* base (keyboard deck) */}
-          <div style={{
-            width: 'min(67vw, 970px)', height: '15px', marginTop: '-1px',
-            background: 'linear-gradient(180deg,#43434a 0%, #232327 55%, #0c0c0e 100%)',
-            borderRadius: '4px 4px 13px 13px',
-            boxShadow: '0 36px 60px rgba(0,0,0,0.6)', position: 'relative',
-          }}>
-            <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: '130px', height: '6px', background: '#0a0a0a', borderRadius: '0 0 7px 7px' }} />
+          <div ref={l4Ref} style={layerStyle}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={AFTER_URL_2} alt="Mallys redesign — 2" style={imgStyle} />
           </div>
         </div>
 
@@ -221,17 +202,39 @@ export default function MallysGlitch() {
         </div>
       </section>
 
-      {/* Editorial — normal flow below the pin; after-image cross-fades after ↔ after-2 */}
-      <section style={{ background: 'var(--bg2)', padding: '90px 7vw', borderTop: '0.5px solid var(--border)' }}>
+      {/* Editorial — MacBook opens on scroll (left), text reveals (right) */}
+      <section ref={editorialRef} style={{ background: 'var(--bg2)', padding: '100px 7vw', borderTop: '0.5px solid var(--border)' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '56px', alignItems: 'center' }}>
-          <div style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden', border: '0.5px solid var(--border)', boxShadow: '0 40px 90px rgba(0,0,0,0.4)' }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={AFTER_URL} alt="Mallys redesign — full view" style={{ width: '100%', height: 'auto', display: 'block', opacity: afterSlot === 0 ? 1 : 0, transition: 'opacity 0.7s ease' }} />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={AFTER_URL_2} alt="Mallys redesign — full view 2" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center', opacity: afterSlot === 1 ? 1 : 0, transition: 'opacity 0.7s ease' }} />
+
+          {/* MacBook (left) */}
+          <div style={{ perspective: '2200px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div ref={editLidRef} style={{
+              width: '100%', maxWidth: 560, aspectRatio: '16 / 10',
+              transformOrigin: 'center bottom', transform: 'rotateX(-90deg)',
+              background: '#0a0a0a', borderRadius: '14px 14px 5px 5px',
+              padding: '9px 9px 10px', boxSizing: 'border-box',
+              boxShadow: '0 45px 80px rgba(0,0,0,0.5)', position: 'relative', willChange: 'transform',
+            }}>
+              <div style={{ position: 'absolute', top: 5, left: '50%', transform: 'translateX(-50%)', width: 84, height: 5, background: '#000', borderRadius: 4, zIndex: 2 }} />
+              <div style={{ position: 'relative', width: '100%', height: '100%', borderRadius: '4px', overflow: 'hidden', background: '#0d0d10' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={AFTER_URL} alt="Mallys redesign — 1" onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }} style={{ ...screenImg, opacity: afterSlot === 0 ? 1 : 0 }} />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={AFTER_URL_2} alt="Mallys redesign — 2" onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }} style={{ ...screenImg, opacity: afterSlot === 1 ? 1 : 0 }} />
+              </div>
+            </div>
+            <div style={{
+              width: 'min(108%, 600px)', height: '13px', marginTop: '-1px',
+              background: 'linear-gradient(180deg,#43434a 0%, #232327 55%, #0c0c0e 100%)',
+              borderRadius: '4px 4px 12px 12px', boxShadow: '0 30px 50px rgba(0,0,0,0.55)', position: 'relative',
+            }}>
+              <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: '116px', height: '5px', background: '#0a0a0a', borderRadius: '0 0 6px 6px' }} />
+            </div>
           </div>
-          <div>
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '10px', letterSpacing: '0.25em', color: 'var(--gold)', textTransform: 'uppercase' }}>Mallys · Handmade Porcelain</span>
+
+          {/* Text (right) */}
+          <div ref={editTextRef}>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '10px', letterSpacing: '0.25em', color: 'var(--gold)', textTransform: 'uppercase', display: 'block' }}>Mallys · Handmade Porcelain</span>
             <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: 'clamp(28px,3vw,44px)', fontWeight: 700, letterSpacing: '-0.025em', color: 'var(--white)', margin: '14px 0 28px', lineHeight: 1.1 }}>From generic template<br />to a brand with a voice.</h3>
             {copy.map(([l, t]) => (
               <div key={l} style={{ marginBottom: '22px' }}>
