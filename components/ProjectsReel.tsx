@@ -48,9 +48,9 @@ function BrowserFrame({ project, activeImg }: { project: Project; activeImg: num
 // like a real phone (no white bars). A sliver may be trimmed at the very bottom.
 function SinglePhone({ project, src, dim }: { project: Project; src?: string; dim?: boolean }) {
   return (
-    <div style={{ position: 'relative', height: 'min(64vh, 520px)', aspectRatio: '9 / 19.5', background: 'linear-gradient(135deg,#e8e9ec 0%,#c0c3ca 32%,#f3f4f6 50%,#b2b5bd 70%,#d4d6db 100%)', borderRadius: 36, padding: 8, boxShadow: '0 40px 90px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.5)', filter: dim ? 'brightness(0.95)' : 'none' }}>
+    <div style={{ position: 'relative', height: 'min(64vh, 520px)', aspectRatio: '9 / 19.5', background: '#0b0b0b', borderRadius: 36, padding: 8, boxShadow: '0 40px 90px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.06)', filter: dim ? 'brightness(0.95)' : 'none' }}>
       <div style={{ position: 'absolute', top: 14, left: '50%', transform: 'translateX(-50%)', width: 70, height: 20, background: '#000', borderRadius: 12, zIndex: 3 }} />
-      <div style={{ position: 'relative', width: '100%', height: '100%', borderRadius: 28, overflow: 'hidden', background: '#0f0f12', boxShadow: 'inset 0 0 0 2px #0a0a0a' }}>
+      <div style={{ position: 'relative', width: '100%', height: '100%', borderRadius: 28, overflow: 'hidden', background: '#0f0f12' }}>
         <Placeholder project={project} />
         {src && (
           // eslint-disable-next-line @next/next/no-img-element
